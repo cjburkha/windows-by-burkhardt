@@ -1,0 +1,64 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: windows-by-burkhardt
+  CONTAINER_NAME: windows-by-burkhardt
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Deploy to AWS App Runner
+      run: |
+        aws apprunner update-service \
+          --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
+          --source-configuration "ImageRepository={ImageIdentifier=${{ steps.build-image.outputs.image }},ImageConfiguration={Port=3000,RuntimeEnvironmentVariables={NODE_ENV=production,AWS_REGION=${{ env.AWS_REGION }},AWS_ACCESS_KEY_ID=${{ secrets.AWS_SES_ACCESS_KEY_ID }},AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SES_SECRET_ACCESS_KEY }},AWS_SES_FROM_EMAIL=${{ secrets.AWS_SES_FROM_EMAIL }},RECIPIENT_EMAIL=${{ secrets.RECIPIENT_EMAIL }}}},ImageRepositoryType=ECR}" \
+          --region ${{ env.AWS_REGION }}
+
+    - name: Wait for deployment
+      run: |
+        echo "Waiting for App Runner service to update..."
+        aws apprunner wait service-running \
+          --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
+          --region ${{ env.AWS_REGION }} || true
+
+    - name: Deployment complete
+      run: |
+        echo "Deployment completed successfully!"
+        echo "Service URL: https://${{ secrets.APP_RUNNER_DOMAIN }}"

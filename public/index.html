@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows by Burkhardt - Schedule Your Free In-Home Consultation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <div class="logo-primary">
+                    <h1>Windows by Burkhardt</h1>
+                    <p class="tagline">Quality Windows, Expert Installation</p>
+                </div>
+                <div class="logo-secondary">
+                    <p class="partnership">In partnership with</p>
+                    <h2>Apex Energy Group</h2>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero">
+                <h2>Schedule Your Free In-Home Consultation</h2>
+                <p>Let our experts help you find the perfect windows for your home. Fill out the form below and we'll contact you to schedule a convenient time.</p>
+            </section>
+
+            <section class="form-section">
+                <form id="consultationForm">
+                    <div class="form-group">
+                        <label for="name">Full Name <span class="required">*</span></label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email Address <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number <span class="required">*</span></label>
+                            <input type="tel" id="phone" name="phone" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Street Address</label>
+                        <input type="text" id="address" name="address">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="state">State</label>
+                            <input type="text" id="state" name="state" maxlength="2" placeholder="CA">
+                        </div>
+                        <div class="form-group form-group-small">
+                            <label for="zip">ZIP Code</label>
+                            <input type="text" id="zip" name="zip" maxlength="5">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="preferredDate">Preferred Date</label>
+                            <input type="date" id="preferredDate" name="preferredDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="preferredTime">Preferred Time</label>
+                            <select id="preferredTime" name="preferredTime">
+                                <option value="">Select a time</option>
+                                <option value="Morning (8am-12pm)">Morning (8am-12pm)</option>
+                                <option value="Afternoon (12pm-4pm)">Afternoon (12pm-4pm)</option>
+                                <option value="Evening (4pm-7pm)">Evening (4pm-7pm)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Additional Information</label>
+                        <textarea id="message" name="message" rows="4" placeholder="Tell us about your window needs, number of windows, any specific requirements..."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">Schedule Consultation</button>
+                    </div>
+
+                    <div id="formMessage" class="form-message"></div>
+                </form>
+            </section>
+
+            <section class="benefits">
+                <h3>Why Choose Windows by Burkhardt?</h3>
+                <div class="benefits-grid">
+                    <div class="benefit-item">
+                        <h4>🏆 Expert Installation</h4>
+                        <p>Decades of experience in professional window installation</p>
+                    </div>
+                    <div class="benefit-item">
+                        <h4>💰 Energy Efficient</h4>
+                        <p>Save on energy costs with our high-quality windows</p>
+                    </div>
+                    <div class="benefit-item">
+                        <h4>✅ Quality Guarantee</h4>
+                        <p>Premium materials backed by industry-leading warranties</p>
+                    </div>
+                    <div class="benefit-item">
+                        <h4>🤝 Trusted Partnership</h4>
+                        <p>Partnered with Apex Energy Group for comprehensive solutions</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Windows by Burkhardt. All rights reserved.</p>
+            <p>In partnership with Apex Energy Group</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
