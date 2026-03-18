@@ -5,135 +5,323 @@
 }
 
 :root {
-    --primary-color: #2c5282;
-    --secondary-color: #1a365d;
-    --accent-color: #4299e1;
-    --apex-color: #d97706;
-    --success-color: #48bb78;
-    --error-color: #f56565;
-    --text-color: #2d3748;
-    --light-bg: #f7fafc;
+    --apex-green: #76bd1d;
+    --apex-black: #000000;
+    --apex-dark: #111111;
+    --apex-dark-2: #1a1a1a;
+    --apex-footer: #222222;
+    --apex-body-text: #aaaaaa;
+    --apex-heading: #ffffff;
+    --apex-muted: #666666;
+    --apex-border: #2a2a2a;
     --white: #ffffff;
-    --border-color: #e2e8f0;
+    --success-color: #76bd1d;
+    --error-color: #e05252;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-    line-height: 1.6;
-    color: var(--text-color);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Merriweather Sans', sans-serif;
+    line-height: 1.7;
+    color: var(--apex-body-text);
+    background-color: var(--apex-black);
     min-height: 100vh;
-    padding: 20px;
 }
 
-.container {
-    max-width: 900px;
-    margin: 0 auto;
-    background: var(--white);
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
-}
+/* ─── HEADER ─────────────────────────────────────── */
 
 header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    color: var(--white);
-    padding: 40px 30px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.92);
+    border-bottom: 1px solid var(--apex-border);
+    backdrop-filter: blur(6px);
 }
 
-.logo-container {
+.header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px;
+    height: 72px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 20px;
+    justify-content: space-between;
 }
 
-.logo-primary h1 {
-    font-size: 2.5rem;
-    margin-bottom: 5px;
+.brand-primary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand-name {
+    font-family: 'Merriweather', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: 0.02em;
+}
+
+.brand-divider {
+    display: inline-block;
+    width: 1px;
+    height: 24px;
+    background: var(--apex-border);
+}
+
+.brand-sub {
+    font-size: 0.8rem;
+    color: var(--apex-muted);
+    font-weight: 300;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.brand-sub strong {
+    color: var(--apex-green);
     font-weight: 700;
 }
 
-.logo-primary .tagline {
-    font-size: 1rem;
-    opacity: 0.9;
+nav a.nav-cta {
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--white);
+    text-decoration: none;
+    border: 2px solid var(--apex-green);
+    border-radius: 10px;
+    padding: 9px 22px;
+    transition: background 0.25s, color 0.25s;
 }
 
-.logo-secondary {
-    text-align: right;
-    padding: 15px 20px;
-    border-left: 3px solid var(--apex-color);
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+nav a.nav-cta:hover {
+    background: var(--apex-green);
+    color: var(--apex-black);
 }
 
-.logo-secondary .partnership {
-    font-size: 0.85rem;
-    opacity: 0.8;
-    margin-bottom: 5px;
-}
-
-.logo-secondary h2 {
-    font-size: 1.5rem;
-    color: var(--apex-color);
-    font-weight: 600;
-}
-
-main {
-    padding: 40px 30px;
-}
+/* ─── HERO ────────────────────────────────────────── */
 
 .hero {
+    position: relative;
+    min-height: 100vh;
+    background: var(--apex-black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    margin-bottom: 40px;
+    overflow: hidden;
 }
 
-.hero h2 {
-    color: var(--primary-color);
-    font-size: 2rem;
-    margin-bottom: 15px;
+.hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center top, rgba(118,189,29,0.08) 0%, transparent 60%);
+    pointer-events: none;
 }
 
-.hero p {
-    font-size: 1.1rem;
-    color: #4a5568;
-    max-width: 700px;
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    padding: 120px 40px 80px;
+}
+
+.hero-eyebrow {
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--apex-green);
+    margin-bottom: 24px;
+}
+
+.hero h1 {
+    font-family: 'Merriweather', serif;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--white);
+    margin-bottom: 24px;
+}
+
+.hero h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--apex-green);
+}
+
+.hero-sub {
+    font-size: 1.15rem;
+    font-weight: 300;
+    color: var(--apex-body-text);
+    margin-bottom: 44px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.btn-hero {
+    display: inline-block;
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--white);
+    border: 2px solid var(--white);
+    border-radius: 10px;
+    padding: 16px 40px;
+    transition: background 0.25s, color 0.25s;
+}
+
+.btn-hero:hover {
+    background: var(--white);
+    color: var(--apex-black);
+}
+
+/* ─── PROMISE STRIP ───────────────────────────────── */
+
+.promise-strip {
+    background: var(--apex-dark-2);
+    border-top: 1px solid var(--apex-border);
+    border-bottom: 1px solid var(--apex-border);
+    padding: 70px 40px;
+}
+
+.promise-inner {
+    max-width: 1100px;
     margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 48px;
 }
+
+.promise-item {
+    text-align: center;
+}
+
+.promise-icon {
+    display: block;
+    font-size: 1.4rem;
+    color: var(--apex-green);
+    margin-bottom: 16px;
+}
+
+.promise-item h3 {
+    font-family: 'Merriweather', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 10px;
+}
+
+.promise-item p {
+    font-size: 0.9rem;
+    color: var(--apex-body-text);
+    line-height: 1.7;
+}
+
+/* ─── FORM SECTION ────────────────────────────────── */
 
 .form-section {
-    background: var(--light-bg);
-    padding: 30px;
-    border-radius: 8px;
-    margin-bottom: 40px;
+    background: var(--apex-dark);
+    padding: 100px 40px;
 }
 
-.form-group {
+.form-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+}
+
+.section-eyebrow {
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--apex-green);
+    margin-bottom: 16px;
+}
+
+.form-intro h2 {
+    font-family: 'Merriweather', serif;
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--white);
     margin-bottom: 20px;
+}
+
+.form-intro h2 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--apex-green);
+}
+
+.form-intro > p {
+    font-size: 0.95rem;
+    color: var(--apex-body-text);
+    margin-bottom: 36px;
+    line-height: 1.8;
+}
+
+blockquote {
+    border-left: 3px solid var(--apex-green);
+    padding: 16px 20px;
+    margin: 0;
+    color: var(--apex-body-text);
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+blockquote cite {
+    display: block;
+    font-style: normal;
+    font-size: 0.8rem;
+    color: var(--apex-muted);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+}
+
+/* ─── FORM FIELDS ─────────────────────────────────── */
+
+.consultation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.field {
     flex: 1;
 }
 
-.form-row {
+.field-row {
     display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
+    gap: 16px;
 }
 
-.form-group-small {
-    flex: 0.5;
-    min-width: 100px;
+.field-grow {
+    flex: 2;
 }
 
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.required {
-    color: var(--error-color);
+.field-sm {
+    flex: 0 0 80px;
 }
 
 input[type="text"],
@@ -143,168 +331,323 @@ input[type="date"],
 select,
 textarea {
     width: 100%;
-    padding: 12px 15px;
-    border: 2px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 1rem;
-    font-family: inherit;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--apex-border);
+    border-radius: 0;
+    padding: 12px 2px;
+    font-size: 0.95rem;
+    font-family: 'Merriweather Sans', sans-serif;
+    color: var(--white);
+    transition: border-color 0.25s;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--apex-muted);
+}
+
+select option {
+    background: var(--apex-dark);
+    color: var(--white);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.4);
+    cursor: pointer;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+    border-bottom-color: var(--apex-green);
 }
 
 textarea {
     resize: vertical;
+    min-height: 110px;
 }
 
-.form-actions {
-    margin-top: 30px;
-    text-align: center;
+.field-submit {
+    margin-top: 10px;
 }
 
 .btn-submit {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-    color: var(--white);
-    padding: 15px 50px;
-    border: none;
-    border-radius: 50px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--apex-black);
+    background: var(--apex-green);
+    border: 2px solid var(--apex-green);
+    border-radius: 10px;
+    padding: 16px 36px;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: background 0.25s, color 0.25s;
+    width: 100%;
 }
 
 .btn-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(44, 82, 130, 0.3);
-}
-
-.btn-submit:active {
-    transform: translateY(0);
+    background: transparent;
+    color: var(--apex-green);
 }
 
 .btn-submit:disabled {
-    background: #cbd5e0;
+    opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
+}
+
+.form-note {
+    font-size: 0.78rem;
+    color: var(--apex-muted);
+    margin-top: 12px;
+    text-align: center;
 }
 
 .form-message {
-    margin-top: 20px;
-    padding: 15px;
+    margin-top: 16px;
+    padding: 14px 18px;
     border-radius: 6px;
-    text-align: center;
+    font-size: 0.9rem;
     font-weight: 600;
     display: none;
+    text-align: center;
 }
 
 .form-message.success {
-    background: #c6f6d5;
-    color: #22543d;
-    border: 2px solid var(--success-color);
+    background: rgba(118, 189, 29, 0.12);
+    color: var(--apex-green);
+    border: 1px solid var(--apex-green);
     display: block;
 }
 
 .form-message.error {
-    background: #fed7d7;
-    color: #742a2a;
-    border: 2px solid var(--error-color);
+    background: rgba(224, 82, 82, 0.1);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
     display: block;
 }
 
-.benefits {
-    margin-top: 50px;
+/* ─── APEX PARTNERSHIP SECTION ────────────────────── */
+
+.apex-section {
+    background: var(--apex-dark-2);
+    border-top: 1px solid var(--apex-border);
+    border-bottom: 1px solid var(--apex-border);
+    padding: 100px 40px;
 }
 
-.benefits h3 {
-    color: var(--primary-color);
-    font-size: 1.8rem;
-    margin-bottom: 30px;
-    text-align: center;
-}
-
-.benefits-grid {
+.apex-inner {
+    max-width: 1100px;
+    margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 25px;
+    grid-template-columns: 1fr auto;
+    gap: 80px;
+    align-items: center;
 }
 
-.benefit-item {
-    text-align: center;
-    padding: 20px;
-    background: var(--light-bg);
-    border-radius: 8px;
-    transition: transform 0.2s;
+.apex-text h2 {
+    font-family: 'Merriweather', serif;
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--white);
+    margin-bottom: 20px;
 }
 
-.benefit-item:hover {
-    transform: translateY(-5px);
+.apex-text h2 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--apex-green);
 }
 
-.benefit-item h4 {
-    color: var(--primary-color);
-    margin-bottom: 10px;
-    font-size: 1.2rem;
-}
-
-.benefit-item p {
-    color: #4a5568;
+.apex-text > p {
     font-size: 0.95rem;
+    color: var(--apex-body-text);
+    line-height: 1.8;
+    max-width: 520px;
+    margin-bottom: 36px;
 }
+
+.btn-outline {
+    display: inline-block;
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--white);
+    border: 2px solid var(--white);
+    border-radius: 10px;
+    padding: 13px 30px;
+    transition: background 0.25s, color 0.25s;
+}
+
+.btn-outline:hover {
+    background: var(--white);
+    color: var(--apex-black);
+}
+
+.apex-badge {
+    text-align: center;
+    padding: 40px;
+    border: 1px solid var(--apex-border);
+    border-radius: 4px;
+    min-width: 200px;
+}
+
+.apex-badge-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--apex-muted);
+    margin-bottom: 12px;
+}
+
+.apex-badge-name {
+    font-family: 'Merriweather', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 8px;
+}
+
+.apex-badge-tagline {
+    font-size: 0.8rem;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--apex-green);
+}
+
+/* ─── FOOTER ──────────────────────────────────────── */
 
 footer {
-    background: var(--secondary-color);
+    background: var(--apex-footer);
+    border-top: 1px solid var(--apex-border);
+}
+
+.footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 24px;
+}
+
+.footer-name {
+    font-family: 'Merriweather', serif;
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--white);
+    margin-bottom: 4px;
+}
+
+.footer-partner {
+    font-size: 0.78rem;
+    color: var(--apex-muted);
+    letter-spacing: 0.04em;
+}
+
+.footer-links {
+    display: flex;
+    gap: 28px;
+}
+
+.footer-links a {
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--apex-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.footer-links a:hover {
+    color: var(--apex-green);
+}
+
+.footer-bottom {
+    border-top: 1px solid var(--apex-border);
     text-align: center;
-    padding: 30px;
+    padding: 20px 40px;
 }
 
-footer p {
-    margin: 5px 0;
-    opacity: 0.9;
+.footer-bottom p {
+    font-size: 0.78rem;
+    color: var(--apex-muted);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .logo-container {
+/* ─── RESPONSIVE ──────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .form-container {
+        grid-template-columns: 1fr;
+        gap: 60px;
+    }
+
+    .apex-inner {
+        grid-template-columns: 1fr;
+        gap: 48px;
+    }
+
+    .apex-badge {
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 640px) {
+    .header-inner {
+        padding: 0 20px;
+    }
+
+    .brand-divider,
+    .brand-sub {
+        display: none;
+    }
+
+    .hero-content {
+        padding: 100px 24px 60px;
+    }
+
+    .promise-strip,
+    .form-section,
+    .apex-section {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .field-row {
         flex-direction: column;
-        text-align: center;
+        gap: 0;
     }
 
-    .logo-secondary {
-        text-align: center;
-        border-left: none;
-        border-top: 3px solid var(--apex-color);
-        width: 100%;
-    }
-
-    .logo-primary h1 {
-        font-size: 2rem;
-    }
-
-    .hero h2 {
-        font-size: 1.5rem;
-    }
-
-    .form-row {
-        flex-direction: column;
-    }
-
-    .form-group-small {
+    .field-sm {
         flex: 1;
     }
 
-    main {
-        padding: 30px 20px;
+    .footer-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 40px 24px;
     }
 
-    .form-section {
-        padding: 20px;
+    .footer-links {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .footer-bottom {
+        padding: 16px 24px;
     }
 }

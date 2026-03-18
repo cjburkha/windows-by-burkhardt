@@ -3,125 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Windows by Burkhardt - Schedule Your Free In-Home Consultation</title>
+    <title>Windows by Burkhardt — Schedule Your Free In-Home Consultation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Merriweather+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo-container">
-                <div class="logo-primary">
-                    <h1>Windows by Burkhardt</h1>
-                    <p class="tagline">Quality Windows, Expert Installation</p>
-                </div>
-                <div class="logo-secondary">
-                    <p class="partnership">In partnership with</p>
-                    <h2>Apex Energy Group</h2>
-                </div>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-inner">
+            <div class="brand-primary">
+                <span class="brand-name">Windows by Burkhardt</span>
+                <span class="brand-divider"></span>
+                <span class="brand-sub">An <strong>Apex Energy Group</strong> Partner</span>
             </div>
-        </header>
+            <nav>
+                <a href="#schedule" class="nav-cta">Schedule Now</a>
+            </nav>
+        </div>
+    </header>
 
-        <main>
-            <section class="hero">
-                <h2>Schedule Your Free In-Home Consultation</h2>
-                <p>Let our experts help you find the perfect windows for your home. Fill out the form below and we'll contact you to schedule a convenient time.</p>
-            </section>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <p class="hero-eyebrow">Free In-Home Consultations</p>
+            <h1>There&#8217;s gotta be<br><em>a better window.</em></h1>
+            <p class="hero-sub">We come to you — schedule your free, no-pressure consultation today.</p>
+            <a href="#schedule" class="btn-hero">Schedule My Free Consultation</a>
+        </div>
+    </section>
 
-            <section class="form-section">
-                <form id="consultationForm">
-                    <div class="form-group">
-                        <label for="name">Full Name <span class="required">*</span></label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
+    <!-- PROMISE STRIP -->
+    <section class="promise-strip">
+        <div class="promise-inner">
+            <div class="promise-item">
+                <span class="promise-icon">&#10022;</span>
+                <h3>Better Products</h3>
+                <p>Triple-pane Insignia windows that exceed industry energy standards</p>
+            </div>
+            <div class="promise-item">
+                <span class="promise-icon">&#10022;</span>
+                <h3>Better Information</h3>
+                <p>No pressure — we educate you so you make the right decision</p>
+            </div>
+            <div class="promise-item">
+                <span class="promise-icon">&#10022;</span>
+                <h3>Better Service</h3>
+                <p>From first visit to final installation, we&#8217;re with you every step</p>
+            </div>
+            <div class="promise-item">
+                <span class="promise-icon">&#10022;</span>
+                <h3>Better Way</h3>
+                <p>Family-owned, Apex-backed — quality you can trust in your home</p>
+            </div>
+        </div>
+    </section>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="email">Email Address <span class="required">*</span></label>
-                            <input type="email" id="email" name="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number <span class="required">*</span></label>
-                            <input type="tel" id="phone" name="phone" required>
-                        </div>
-                    </div>
+    <!-- FORM SECTION -->
+    <section class="form-section" id="schedule">
+        <div class="form-container">
+            <div class="form-intro">
+                <p class="section-eyebrow">Get Started</p>
+                <h2>Schedule Your Free<br><em>In-Home Consultation</em></h2>
+                <p>Fill out the form and we&#8217;ll reach out to schedule a time that works for you. Our consultations are free, informative, and never high-pressure.</p>
+                <blockquote>
+                    &#8220;I didn&#8217;t think I could be giddy about windows, but I love our windows!&#8221;
+                    <cite>&#8212; Apex Energy Group customer</cite>
+                </blockquote>
+            </div>
 
-                    <div class="form-group">
-                        <label for="address">Street Address</label>
-                        <input type="text" id="address" name="address">
-                    </div>
+            <form id="consultationForm" class="consultation-form">
+                <div class="field">
+                    <input type="text" id="name" name="name" placeholder="Full Name *" required>
+                </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="city">City</label>
-                            <input type="text" id="city" name="city">
-                        </div>
-                        <div class="form-group form-group-small">
-                            <label for="state">State</label>
-                            <input type="text" id="state" name="state" maxlength="2" placeholder="CA">
-                        </div>
-                        <div class="form-group form-group-small">
-                            <label for="zip">ZIP Code</label>
-                            <input type="text" id="zip" name="zip" maxlength="5">
-                        </div>
+                <div class="field-row">
+                    <div class="field">
+                        <input type="email" id="email" name="email" placeholder="Email Address *" required>
                     </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="preferredDate">Preferred Date</label>
-                            <input type="date" id="preferredDate" name="preferredDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="preferredTime">Preferred Time</label>
-                            <select id="preferredTime" name="preferredTime">
-                                <option value="">Select a time</option>
-                                <option value="Morning (8am-12pm)">Morning (8am-12pm)</option>
-                                <option value="Afternoon (12pm-4pm)">Afternoon (12pm-4pm)</option>
-                                <option value="Evening (4pm-7pm)">Evening (4pm-7pm)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="message">Additional Information</label>
-                        <textarea id="message" name="message" rows="4" placeholder="Tell us about your window needs, number of windows, any specific requirements..."></textarea>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn-submit">Schedule Consultation</button>
-                    </div>
-
-                    <div id="formMessage" class="form-message"></div>
-                </form>
-            </section>
-
-            <section class="benefits">
-                <h3>Why Choose Windows by Burkhardt?</h3>
-                <div class="benefits-grid">
-                    <div class="benefit-item">
-                        <h4>🏆 Expert Installation</h4>
-                        <p>Decades of experience in professional window installation</p>
-                    </div>
-                    <div class="benefit-item">
-                        <h4>💰 Energy Efficient</h4>
-                        <p>Save on energy costs with our high-quality windows</p>
-                    </div>
-                    <div class="benefit-item">
-                        <h4>✅ Quality Guarantee</h4>
-                        <p>Premium materials backed by industry-leading warranties</p>
-                    </div>
-                    <div class="benefit-item">
-                        <h4>🤝 Trusted Partnership</h4>
-                        <p>Partnered with Apex Energy Group for comprehensive solutions</p>
+                    <div class="field">
+                        <input type="tel" id="phone" name="phone" placeholder="Phone Number *" required>
                     </div>
                 </div>
-            </section>
-        </main>
 
-        <footer>
+                <div class="field">
+                    <input type="text" id="address" name="address" placeholder="Street Address">
+                </div>
+
+                <div class="field-row">
+                    <div class="field field-grow">
+                        <input type="text" id="city" name="city" placeholder="City">
+                    </div>
+                    <div class="field field-sm">
+                        <input type="text" id="state" name="state" placeholder="ST" maxlength="2">
+                    </div>
+                    <div class="field field-sm">
+                        <input type="text" id="zip" name="zip" placeholder="ZIP" maxlength="5">
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field">
+                        <input type="date" id="preferredDate" name="preferredDate">
+                    </div>
+                    <div class="field">
+                        <select id="preferredTime" name="preferredTime">
+                            <option value="">Preferred Time</option>
+                            <option value="Morning (8am-12pm)">Morning (8am&#8211;12pm)</option>
+                            <option value="Afternoon (12pm-4pm)">Afternoon (12pm&#8211;4pm)</option>
+                            <option value="Evening (4pm-7pm)">Evening (4pm&#8211;7pm)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <textarea id="message" name="message" rows="4" placeholder="Tell us about your window needs — number of windows, style preferences, or anything else..."></textarea>
+                </div>
+
+                <div class="field-submit">
+                    <button type="submit" class="btn-submit">Schedule My Free Consultation</button>
+                    <p class="form-note">We&#8217;ll never share your information. No spam, ever.</p>
+                </div>
+
+                <div id="formMessage" class="form-message"></div>
+            </form>
+        </div>
+    </section>
+
+    <!-- APEX PARTNERSHIP -->
+    <section class="apex-section">
+        <div class="apex-inner">
+            <div class="apex-text">
+                <p class="section-eyebrow">Our Promise</p>
+                <h2>Your home is where<br><em>life happens.</em></h2>
+                <p>Windows by Burkhardt operates as a proud partner of Apex Energy Group &#8212; one of America&#8217;s fastest-growing home improvement companies. That means you get the personal touch of a family business backed by the resources and product quality of a national brand.</p>
+                <a href="#schedule" class="btn-outline">Schedule a Consultation</a>
+            </div>
+            <div class="apex-badge">
+                <p class="apex-badge-label">Authorized Partner</p>
+                <p class="apex-badge-name">Apex Energy Group</p>
+                <p class="apex-badge-tagline">A Better Way</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <p class="footer-name">Windows by Burkhardt</p>
+                <p class="footer-partner">An Apex Energy Group Authorized Partner</p>
+            </div>
+            <div class="footer-links">
+                <a href="#schedule">Schedule Consultation</a>
+                <a href="https://www.apexenergygroup.com" target="_blank" rel="noopener">Apex Energy Group</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
             <p>&copy; 2026 Windows by Burkhardt. All rights reserved.</p>
-            <p>In partnership with Apex Energy Group</p>
-        </footer>
-    </div>
+        </div>
+    </footer>
 
     <script src="script.js"></script>
 </body>
