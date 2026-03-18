@@ -48,7 +48,7 @@ jobs:
       run: |
         aws apprunner update-service \
           --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
-          --source-configuration "ImageRepository={ImageIdentifier=${{ steps.build-image.outputs.image }},ImageConfiguration={Port=3000,RuntimeEnvironmentVariables={NODE_ENV=production,AWS_REGION=${{ env.AWS_REGION }},AWS_ACCESS_KEY_ID=${{ secrets.AWS_SES_ACCESS_KEY_ID }},AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SES_SECRET_ACCESS_KEY }},AWS_SES_FROM_EMAIL=${{ secrets.AWS_SES_FROM_EMAIL }},RECIPIENT_EMAIL=${{ secrets.RECIPIENT_EMAIL }}}},ImageRepositoryType=ECR}" \
+          --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ steps.build-image.outputs.image }}\",\"ImageConfiguration\":{\"Port\":\"3000\",\"RuntimeEnvironmentVariables\":{\"NODE_ENV\":\"production\",\"AWS_REGION\":\"${{ env.AWS_REGION }}\",\"AWS_ACCESS_KEY_ID\":\"${{ secrets.AWS_SES_ACCESS_KEY_ID }}\",\"AWS_SECRET_ACCESS_KEY\":\"${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}\",\"AWS_SES_FROM_EMAIL\":\"${{ secrets.AWS_SES_FROM_EMAIL }}\",\"RECIPIENT_EMAIL\":\"${{ secrets.RECIPIENT_EMAIL }}\"}},\"ImageRepositoryType\":\"ECR\"}}" \
           --region ${{ env.AWS_REGION }}
 
     - name: Wait for deployment
