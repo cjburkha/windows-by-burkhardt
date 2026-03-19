@@ -118,3 +118,55 @@ test.describe('Consultation form – step 2', () => {
     await expect(page.locator('.btn-submit')).toHaveText('Schedule My Free Consultation');
   });
 });
+
+test.describe('Full form submission', () => {
+  test('all fields filled — complete two-step flow with email preview', async ({ page }) => {
+    await page.goto('/#schedule');
+
+    // Step 1: fill every field
+    await page.fill('#name', 'Chris Burkhardt');
+    await page.fill('#email', 'chris@example.com');
+    await page.fill('#phone', '5551234567');
+    await page.fill('#address', '123 Main Street');
+    await page.fill('#city', 'Springfield');
+    await page.fill('#state', 'IL');
+    await page.fill('#zip', '62701');
+
+    // Pick a date 7 days from now via JS to avoid locale/format issues
+    await page.evaluate(() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      (document.getElementById('preferredDate') as HTMLInputElement).value =
+        d.toISOString().split('T')[0];
+    });
+
+    await page.selectOption('#preferredTime', 'Morning (9am)');
+    await page.selectOption('#preferredContact', 'Email');
+    await page.fill('#message', 'Looking to replace 6 double-hung windows. Interested in energy-efficient options.');
+
+    // Advance to step 2
+    await page.click('.btn-submit');
+    await expect(page.locator('#formStep2')).toBeVisible();
+
+    // Step 2: fill referral fields
+    await page.fill('#referralFirstName', 'Sarah');
+    await page.fill('#referralLastName', 'Johnson');
+    await page.fill('#referralPhone', '5559876543');
+
+    // Submit and capture response
+    const responsePromise = page.waitForResponse('/api/contact');
+    await page.click('.btn-submit');
+    const response = await responsePromise;
+    const body = await response.json();
+
+    // Log the full email preview — visible in HTML report under this test
+    if (body.emailPreview) {
+      console.log('\n📧 Full email preview (all fields):\n' + '─'.repeat(50) + '\n' + body.emailPreview + '─'.repeat(50));
+    }
+
+    await expect(page.locator('#formMessage')).not.toHaveClass(/error/);
+    await expect(page.locator('#formMessage')).toContainText('submitted successfully');
+    await expect(page.locator('#formStep1')).toBeVisible();
+    await expect(page.locator('.btn-submit')).toHaveText('Schedule My Free Consultation');
+  });
+});
