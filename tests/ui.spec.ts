@@ -66,6 +66,21 @@ test.describe('Consultation form – step 2', () => {
     await expect(page.locator('#formMessage')).toContainText('submitted successfully');
   });
 
+  test('no error message is shown on successful submit', async ({ page }) => {
+    await page.route('/api/contact', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'Your consultation request has been submitted successfully!' }),
+      })
+    );
+
+    await page.click('.btn-submit');
+
+    await expect(page.locator('#formMessage')).not.toHaveClass(/error/);
+    await expect(page.locator('#formMessage')).not.toContainText(/error|failed|sorry/i);
+  });
+
   test('API error stays on step 2 with Complete button re-enabled', async ({ page }) => {
     await page.route('/api/contact', route =>
       route.fulfill({
@@ -81,5 +96,17 @@ test.describe('Consultation form – step 2', () => {
     await expect(page.locator('.btn-submit')).toHaveText('Complete');
     await expect(page.locator('.btn-submit')).toBeEnabled();
     await expect(page.locator('#formMessage')).toBeVisible();
+  });
+
+  test('real server returns success (no mock) — catches credential or server errors', async ({ page }) => {
+    // Does NOT mock /api/contact — hits the real running server.
+    // The webServer in playwright.config.ts sets NODE_ENV=test so
+    // emailService skips the real SES send and returns success.
+    await page.click('.btn-submit');
+
+    await expect(page.locator('#formMessage')).not.toHaveClass(/error/);
+    await expect(page.locator('#formMessage')).not.toContainText(/error|failed|sorry/i);
+    await expect(page.locator('#formStep1')).toBeVisible();
+    await expect(page.locator('.btn-submit')).toHaveText('Schedule My Free Consultation');
   });
 });

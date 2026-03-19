@@ -1,10 +1,11 @@
 #!/bin/sh
-# Pre-push hook: run UI tests before any push to develop or master.
+# Pre-push hook: run UI tests before any push to develop.
+# Master pushes are done manually and skip this hook.
 # Installed automatically via `npm run prepare`.
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-if [ "$BRANCH" = "develop" ] || [ "$BRANCH" = "master" ]; then
+if [ "$BRANCH" = "develop" ]; then
   echo ""
   echo "🧪  Running UI tests before push to '$BRANCH'..."
   echo ""

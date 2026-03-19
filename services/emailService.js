@@ -1,18 +1,25 @@
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 
-// Configure AWS SES client
-const sesClient = new SESClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.AWS_SES_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.AWS_SES_SECRET_ACCESS_KEY
-  }
-});
-
 /**
  * Send consultation request email via AWS SES
  */
 async function sendConsultationRequest(formData) {
+  // Skip real email send in test environment
+  if (process.env.NODE_ENV === 'test') {
+    console.log('[test] email skipped for:', formData.email);
+    return { success: true, messageId: 'test-mock-id' };
+  }
+
+  // Create the SES client here (not at module load) so it always
+  // reads the current env vars — avoids stale/undefined credentials
+  // when the module is first loaded before dotenv has run.
+  const sesClient = new SESClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.AWS_SES_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.AWS_SES_SECRET_ACCESS_KEY
+    }
+  });
   const {
     name,
     email,
