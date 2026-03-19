@@ -23,6 +23,7 @@ async function sendConsultationRequest(formData) {
     zip,
     preferredDate,
     preferredTime,
+    preferredContact,
     message,
     referralFirstName,
     referralLastName,
@@ -47,6 +48,7 @@ Scheduling Preferences:
 ----------------------
 Preferred Date: ${preferredDate || 'Not specified'}
 Preferred Time: ${preferredTime || 'Not specified'}
+Preferred Contact: ${preferredContact || 'Not specified'}
 
 Additional Message:
 ------------------
@@ -96,6 +98,7 @@ Co-branded with Apex Energy Group.
                 <h3 style="color: #2c5282; border-bottom: 2px solid #2c5282; padding-bottom: 5px;">Scheduling Preferences</h3>
                 <p><strong>Preferred Date:</strong> ${preferredDate || 'Not specified'}</p>
                 <p><strong>Preferred Time:</strong> ${preferredTime || 'Not specified'}</p>
+                <p><strong>Preferred Contact:</strong> ${preferredContact || 'Not specified'}</p>
                 
                 ${message ? `
                   <h3 style="color: #2c5282; border-bottom: 2px solid #2c5282; padding-bottom: 5px;">Additional Message</h3>

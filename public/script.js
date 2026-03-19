@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
             zip: document.getElementById('zip').value,
             preferredDate: document.getElementById('preferredDate').value,
             preferredTime: document.getElementById('preferredTime').value,
+            preferredContact: document.getElementById('preferredContact').value,
             message: document.getElementById('message').value,
             referralFirstName: document.getElementById('referralFirstName').value,
             referralLastName: document.getElementById('referralLastName').value,
