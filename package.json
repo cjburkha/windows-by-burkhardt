@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "NODE_ENV=development nodemon server.js",
-    "test": "playwright test"
+    "test": "playwright test",
+    "prepare": "node scripts/install-hooks.js"
   },
   "keywords": [
     "windows",
