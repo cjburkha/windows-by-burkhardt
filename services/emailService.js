@@ -4,12 +4,6 @@ const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
  * Send consultation request email via AWS SES
  */
 async function sendConsultationRequest(formData) {
-  // Skip real email send in test environment
-  if (process.env.NODE_ENV === 'test') {
-    console.log('[test] email skipped for:', formData.email);
-    return { success: true, messageId: 'test-mock-id' };
-  }
-
   // Create the SES client here (not at module load) so it always
   // reads the current env vars — avoids stale/undefined credentials
   // when the module is first loaded before dotenv has run.
@@ -70,6 +64,11 @@ Phone: ${referralPhone || 'Not provided'}
 This consultation request was submitted via Windows by Burkhardt website.
 Co-branded with Apex Energy Group.
   `;
+
+  // Skip real email send in test environment — return the body so tests can inspect it
+  if (process.env.NODE_ENV === 'test') {
+    return { success: true, messageId: 'test-mock-id', emailBody };
+  }
 
   const params = {
     Source: process.env.AWS_SES_FROM_EMAIL,

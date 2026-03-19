@@ -102,7 +102,8 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     if (emailResult.success) {
       res.json({ 
         success: true, 
-        message: 'Your consultation request has been submitted successfully!' 
+        message: 'Your consultation request has been submitted successfully!',
+        ...(process.env.NODE_ENV === 'test' && { emailPreview: emailResult.emailBody })
       });
     } else {
       throw new Error(emailResult.error);

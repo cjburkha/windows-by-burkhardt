@@ -102,7 +102,15 @@ test.describe('Consultation form – step 2', () => {
     // Does NOT mock /api/contact — hits the real running server.
     // The webServer in playwright.config.ts sets NODE_ENV=test so
     // emailService skips the real SES send and returns success.
+    const responsePromise = page.waitForResponse('/api/contact');
     await page.click('.btn-submit');
+    const response = await responsePromise;
+    const body = await response.json();
+
+    // Log the email preview — visible in the Playwright HTML report under this test
+    if (body.emailPreview) {
+      console.log('\n📧 Email that would have been sent:\n' + '─'.repeat(50) + '\n' + body.emailPreview + '─'.repeat(50));
+    }
 
     await expect(page.locator('#formMessage')).not.toHaveClass(/error/);
     await expect(page.locator('#formMessage')).not.toContainText(/error|failed|sorry/i);
