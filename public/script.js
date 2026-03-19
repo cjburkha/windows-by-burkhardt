@@ -30,7 +30,10 @@ document.addEventListener('DOMContentLoaded', function() {
             zip: document.getElementById('zip').value,
             preferredDate: document.getElementById('preferredDate').value,
             preferredTime: document.getElementById('preferredTime').value,
-            message: document.getElementById('message').value
+            message: document.getElementById('message').value,
+            referralFirstName: document.getElementById('referralFirstName').value,
+            referralLastName: document.getElementById('referralLastName').value,
+            referralPhone: document.getElementById('referralPhone').value
         };
 
         try {
@@ -78,6 +81,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (value.length > 10) {
             value = value.slice(0, 10);
         }
+        if (value.length >= 6) {
+            e.target.value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+        } else if (value.length >= 3) {
+            e.target.value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+        } else {
+            e.target.value = value;
+        }
+    });
+
+    // Referral phone formatting
+    const referralPhoneInput = document.getElementById('referralPhone');
+    referralPhoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 10) value = value.slice(0, 10);
         if (value.length >= 6) {
             e.target.value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
         } else if (value.length >= 3) {

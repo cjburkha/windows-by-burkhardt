@@ -53,7 +53,8 @@ app.get('/', (req, res) => {
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
-    let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, message } = req.body;
+    let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, message,
+          referralFirstName, referralLastName, referralPhone } = req.body;
 
     // Validate required fields
     if (!name || !email || !phone) {
@@ -81,6 +82,9 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     zip         = zip         ? validator.trim(zip).replace(/\D/g, '').substring(0, 5) : '';
     message     = message     ? xss(validator.trim(message))     : '';
     preferredTime = preferredTime ? validator.trim(preferredTime) : '';
+    referralFirstName = referralFirstName ? xss(validator.trim(referralFirstName)).substring(0, 100) : '';
+    referralLastName  = referralLastName  ? xss(validator.trim(referralLastName)).substring(0, 100)  : '';
+    referralPhone     = referralPhone     ? validator.trim(referralPhone).replace(/[^\d\s\-()+.]/g, '').substring(0, 20) : '';
 
     // Validate date is a real future date if provided
     if (preferredDate) {
@@ -90,7 +94,8 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     }
 
     const emailResult = await emailService.sendConsultationRequest({
-      name, email, phone, address, city, state, zip, preferredDate, preferredTime, message
+      name, email, phone, address, city, state, zip, preferredDate, preferredTime, message,
+      referralFirstName, referralLastName, referralPhone
     });
 
     if (emailResult.success) {

@@ -408,6 +408,37 @@ textarea {
     text-align: center;
 }
 
+/* Referral section */
+.referral-section {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 20px 20px 12px;
+    margin-top: 8px;
+}
+
+.referral-section legend {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--apex-green);
+    padding: 0 8px;
+}
+
+.referral-section .optional {
+    font-weight: 400;
+    color: var(--apex-muted);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.referral-note {
+    font-size: 0.82rem;
+    color: var(--apex-muted);
+    margin: 0 0 16px;
+}
+
 .form-message {
     margin-top: 16px;
     padding: 14px 18px;

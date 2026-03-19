@@ -23,7 +23,10 @@ async function sendConsultationRequest(formData) {
     zip,
     preferredDate,
     preferredTime,
-    message
+    message,
+    referralFirstName,
+    referralLastName,
+    referralPhone
   } = formData;
 
   const emailBody = `
@@ -49,6 +52,11 @@ Additional Message:
 ------------------
 ${message || 'No additional message'}
 
+${(referralFirstName || referralLastName || referralPhone) ? `Referred By:
+------------
+Name: ${[referralFirstName, referralLastName].filter(Boolean).join(' ')}
+Phone: ${referralPhone || 'Not provided'}
+` : ''}
 ---
 This consultation request was submitted via Windows by Burkhardt website.
 Co-branded with Apex Energy Group.
@@ -92,6 +100,12 @@ Co-branded with Apex Energy Group.
                 ${message ? `
                   <h3 style="color: #2c5282; border-bottom: 2px solid #2c5282; padding-bottom: 5px;">Additional Message</h3>
                   <p>${message}</p>
+                ` : ''}
+
+                ${(referralFirstName || referralLastName || referralPhone) ? `
+                  <h3 style="color: #2c5282; border-bottom: 2px solid #2c5282; padding-bottom: 5px;">Referred By</h3>
+                  <p><strong>Name:</strong> ${[referralFirstName, referralLastName].filter(Boolean).join(' ')}</p>
+                  <p><strong>Phone:</strong> ${referralPhone || 'Not provided'}</p>
                 ` : ''}
                 
                 <hr style="margin-top: 30px; border: none; border-top: 1px solid #ddd;"/>
