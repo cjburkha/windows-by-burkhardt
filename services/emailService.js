@@ -65,8 +65,10 @@ This consultation request was submitted via Windows by Burkhardt website.
 Co-branded with Apex Energy Group.
   `;
 
-  // Skip real email send in test environment — return the body so tests can inspect it
-  if (process.env.NODE_ENV === 'test') {
+  // Skip real SES send in two cases:
+  //  1. NODE_ENV=test  — CI running the fake server
+  //  2. SKIP_EMAIL=true — real dev server started via `npm run test:dev`
+  if (process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true') {
     return { success: true, messageId: 'test-mock-id', emailBody };
   }
 

@@ -1,6 +1,6 @@
 {
-  "watch": ["server.js", "services/", "public/"],
-  "ext": "js,json,html,css",
+  "watch": ["server.js", "services/"],
+  "ext": "js,json",
   "ignore": ["node_modules/", "*.test.js"],
   "delay": 300
 }

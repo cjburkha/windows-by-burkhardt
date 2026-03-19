@@ -78,15 +78,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 formMessage.textContent = result.message || 'Thank you! Your consultation request has been submitted successfully. We will contact you soon.';
                 formMessage.style.display = 'block';
 
-                form.reset();
-                updateContactColor();
+                // Populate confirmation panel with submitted data
+                document.getElementById('confirmName').textContent = formData.name;
+                document.getElementById('confirmEmail').textContent = formData.email;
+                document.getElementById('confirmPhone').textContent = formData.phone;
 
-                // Return to step 1
+                const addrParts = [];
+                if (formData.address) addrParts.push(formData.address);
+                const cityStateZip = [formData.city, formData.state, formData.zip].filter(Boolean).join(' ');
+                if (cityStateZip) addrParts.push(cityStateZip);
+                const confirmAddressRow = document.getElementById('confirmAddressRow');
+                if (addrParts.length) {
+                    document.getElementById('confirmAddress').textContent = addrParts.join(', ');
+                    confirmAddressRow.style.display = '';
+                } else {
+                    confirmAddressRow.style.display = 'none';
+                }
+
+                const scheduleParts = [formData.preferredDate, formData.preferredTime].filter(Boolean);
+                const confirmScheduleRow = document.getElementById('confirmScheduleRow');
+                if (scheduleParts.length) {
+                    document.getElementById('confirmSchedule').textContent = scheduleParts.join(' · ');
+                    confirmScheduleRow.style.display = '';
+                } else {
+                    confirmScheduleRow.style.display = 'none';
+                }
+
+                // Hide form steps and submit button, show confirmation panel
                 step2.style.display = 'none';
                 step2.classList.remove('step-fade-in');
-                step1.style.display = 'block';
-                formPhase = 1;
+                document.getElementById('formConfirmation').style.display = 'block';
+                document.querySelector('.field-submit').style.display = 'none';
                 submitButton.textContent = 'Schedule My Free Consultation';
+                formPhase = 1;
+                form.reset();
+                updateContactColor();
 
                 formMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
@@ -103,6 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitButton.textContent = 'Complete';
             }
         }
+    });
+
+    // Schedule Another — reset UI so the user can submit a new request
+    document.getElementById('btnScheduleAnother').addEventListener('click', function() {
+        document.getElementById('formConfirmation').style.display = 'none';
+        document.querySelector('.field-submit').style.display = 'block';
+        formMessage.className = 'form-message';
+        formMessage.style.display = 'none';
+        step1.style.display = 'block';
+        submitButton.textContent = 'Schedule My Free Consultation';
     });
 
     // Phone number formatting

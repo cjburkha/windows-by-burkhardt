@@ -7,6 +7,15 @@
     "start": "node server.js",
     "dev": "NODE_ENV=development nodemon server.js",
     "test": "playwright test",
+    "test:open": "playwright test && open playwright-report/index.html",
+    "test:dev": "bash scripts/test-dev.sh",
+    "test:unit": "echo 'No unit tests yet — add a test runner here when needed'",
+    "db:migrate": "bash scripts/db-migrate.sh",
+    "db:deploy": "bash scripts/db-migrate.sh",
+    "db:studio": "prisma studio",
+    "db:create:dev": "bash scripts/create-rds.sh dev",
+    "db:create:prod": "bash scripts/create-rds.sh prod",
+    "setup:dev": "bash scripts/setup-dev.sh",
     "prepare": "node scripts/install-hooks.js"
   },
   "keywords": [
@@ -18,17 +27,22 @@
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-ses": "^3.450.0",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-rate-limit": "^8.3.1",
     "helmet": "^7.1.0",
+    "pg": "^8.20.0",
+    "prisma": "^7.5.0",
     "validator": "^13.15.26",
     "xss": "^1.0.15"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/pg": "^8.18.0",
     "nodemon": "^3.0.1"
   },
   "engines": {

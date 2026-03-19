@@ -11,3 +11,5 @@ dist/
 build/
 coverage/
 public/images/
+
+/generated/prisma

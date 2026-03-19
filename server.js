@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const validator = require('validator');
 const xss = require('xss');
 const emailService = require('./services/emailService');
+const dbService    = require('./services/dbService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,10 +35,11 @@ app.use(cors({ origin: ['https://windowsbyburkhardt.com', 'https://www.windowsby
 app.use(bodyParser.json({ limit: '10kb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10kb' }));
 
-// Rate limit the contact endpoint: max 5 submissions per 15 min per IP
+// Rate limit the contact endpoint: max 5 submissions per 15 min per IP (production).
+// Relaxed to 100 in development/test so repeated test runs don't exhaust the limit.
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: process.env.NODE_ENV === 'production' ? 5 : 100,
   message: { success: false, message: 'Too many requests. Please wait 15 minutes before trying again.' },
   standardHeaders: true,
   legacyHeaders: false
@@ -100,10 +102,17 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     });
 
     if (emailResult.success) {
+      // Save to database — non-blocking. A DB failure logs but never fails the response.
+      dbService.saveSubmission({
+        name, email, phone, address, city, state, zip,
+        preferredDate, preferredTime, preferredContact, message,
+        referralFirstName, referralLastName, referralPhone
+      }).catch(err => console.error('DB save failed:', err.message));
+
       res.json({ 
         success: true, 
         message: 'Your consultation request has been submitted successfully!',
-        ...(process.env.NODE_ENV === 'test' && { emailPreview: emailResult.emailBody })
+        ...((process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true') && { emailPreview: emailResult.emailBody })
       });
     } else {
       throw new Error(emailResult.error);

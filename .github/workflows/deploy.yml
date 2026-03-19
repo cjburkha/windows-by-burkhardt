@@ -11,8 +11,11 @@ env:
   CONTAINER_NAME: windows-by-burkhardt
 
 jobs:
-  test:
+  build-and-deploy:
+    # Tests already ran and passed on the develop branch (ci.yml).
+    # No need to re-run them here.
     runs-on: ubuntu-latest
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,19 +29,10 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps chromium
-
-    - name: Run UI tests
-      run: npm test
-
-  build-and-deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: Run database migrations
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: bash scripts/db-migrate.sh
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -84,3 +78,32 @@ jobs:
       run: |
         echo "Deployment completed successfully!"
         echo "Service URL: https://${{ secrets.APP_RUNNER_DOMAIN }}"
+
+  smoke-test:
+    name: Smoke tests (prod)
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Run UI tests against prod
+      # BASE_URL tells playwright.config.ts to skip starting a local server
+      # and run all tests directly against the live site.
+      # Tests that hit /api/contact without a mock will send a real email —
+      # this confirms SES is working end-to-end after every deploy.
+      env:
+        BASE_URL: https://${{ secrets.APP_RUNNER_DOMAIN }}
+      run: npm test

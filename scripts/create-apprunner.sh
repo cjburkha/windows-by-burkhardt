@@ -18,6 +18,7 @@ fi
 : "${AWS_SES_SECRET_ACCESS_KEY:?  AWS_SES_SECRET_ACCESS_KEY not set. Add it to .env}"
 : "${AWS_SES_FROM_EMAIL:?  AWS_SES_FROM_EMAIL not set. Add it to .env}"
 : "${RECIPIENT_EMAIL:?  RECIPIENT_EMAIL not set. Add it to .env}"
+: "${DATABASE_URL:?  DATABASE_URL not set. Run: bash scripts/create-rds.sh prod}"
 
 echo ""
 echo "╔══════════════════════════════════════════════════╗"
@@ -103,7 +104,8 @@ SERVICE_ARN=$(aws apprunner create-service \
           \"AWS_ACCESS_KEY_ID\": \"$AWS_SES_ACCESS_KEY_ID\",
           \"AWS_SECRET_ACCESS_KEY\": \"$AWS_SES_SECRET_ACCESS_KEY\",
           \"AWS_SES_FROM_EMAIL\": \"$AWS_SES_FROM_EMAIL\",
-          \"RECIPIENT_EMAIL\": \"$RECIPIENT_EMAIL\"
+          \"RECIPIENT_EMAIL\": \"$RECIPIENT_EMAIL\",
+          \"DATABASE_URL\": \"$DATABASE_URL\"
         }
       }
     },
