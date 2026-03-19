@@ -350,6 +350,14 @@ textarea::placeholder {
     color: var(--apex-muted);
 }
 
+#preferredContact {
+    color: var(--apex-muted);
+}
+
+#preferredContact.has-value {
+    color: var(--white);
+}
+
 select option {
     background: var(--apex-dark);
     color: var(--white);
@@ -406,6 +414,26 @@ textarea {
     color: var(--apex-muted);
     margin-top: 12px;
     text-align: center;
+}
+
+/* Two-step form flow */
+#formStep2 {
+    display: none;
+}
+
+@keyframes stepFadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.step-fade-in {
+    animation: stepFadeIn 0.3s ease both;
+}
+
+.step2-intro {
+    font-size: 0.9rem;
+    color: var(--apex-muted);
+    margin: 0 0 18px;
 }
 
 /* Referral section */

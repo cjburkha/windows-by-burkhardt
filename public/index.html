@@ -75,6 +75,7 @@
             </div>
 
             <form id="consultationForm" class="consultation-form">
+                <div id="formStep1">
                 <div class="field">
                     <input type="text" id="name" name="name" placeholder="Full Name *" required>
                 </div>
@@ -130,22 +131,26 @@
                 <div class="field">
                     <textarea id="message" name="message" rows="4" placeholder="Tell us about your window needs — number of windows, style preferences, or anything else..."></textarea>
                 </div>
+                </div><!-- /formStep1 -->
 
+                <div id="formStep2">
+                <p class="step2-intro">Almost done! Were you referred to us by someone?</p>
                 <fieldset class="referral-section">
                     <legend>Referred by <span class="optional">(optional)</span></legend>
-                    <p class="referral-note">Were you referred by someone? Let us know so we can thank them.</p>
+                    <p class="referral-note">Let us know so we can thank them.</p>
                     <div class="field-row">
                         <div class="field">
-                            <input type="text" id="referralFirstName" name="referralFirstName" placeholder="Referrer First Name">
+                            <input type="text" id="referralFirstName" name="referralFirstName" placeholder="First Name">
                         </div>
                         <div class="field">
-                            <input type="text" id="referralLastName" name="referralLastName" placeholder="Referrer Last Name">
+                            <input type="text" id="referralLastName" name="referralLastName" placeholder="Last Name">
                         </div>
                     </div>
                     <div class="field">
-                        <input type="tel" id="referralPhone" name="referralPhone" placeholder="Referrer Phone Number">
+                        <input type="tel" id="referralPhone" name="referralPhone" placeholder="Phone Number">
                     </div>
                 </fieldset>
+                </div><!-- /formStep2 -->
 
                 <div class="field-submit">
                     <button type="submit" class="btn-submit">Schedule My Free Consultation</button>
