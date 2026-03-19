@@ -59,6 +59,7 @@ Co-branded with Apex Energy Group.
     Destination: {
       ToAddresses: [process.env.RECIPIENT_EMAIL || 'chris.burkhardt@live.com']
     },
+    ReplyToAddresses: [email], // safe — only used as reply-to, not injected into headers
     Message: {
       Subject: {
         Data: `New Consultation Request from ${name}`,
