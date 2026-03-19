@@ -7,8 +7,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies — skip lifecycle scripts (no git repo in Docker context)
+# then explicitly generate Prisma client
+RUN npm ci --only=production --ignore-scripts && \
+    npx prisma generate
 
 # Copy application files
 COPY . .
