@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
 
 env:
   AWS_REGION: us-east-1
@@ -15,11 +12,27 @@ env:
 
 jobs:
   build-and-deploy:
+    # Tests already ran and passed on the develop branch (ci.yml).
+    # No need to re-run them here.
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run database migrations
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: bash scripts/db-migrate.sh
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -51,7 +64,7 @@ jobs:
       run: |
         aws apprunner update-service \
           --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
-          --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ steps.build-image.outputs.image }}\",\"ImageConfiguration\":{\"Port\":\"3000\",\"RuntimeEnvironmentVariables\":{\"NODE_ENV\":\"production\",\"AWS_REGION\":\"${{ env.AWS_REGION }}\",\"AWS_ACCESS_KEY_ID\":\"${{ secrets.AWS_SES_ACCESS_KEY_ID }}\",\"AWS_SECRET_ACCESS_KEY\":\"${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}\",\"AWS_SES_FROM_EMAIL\":\"${{ secrets.AWS_SES_FROM_EMAIL }}\",\"RECIPIENT_EMAIL\":\"${{ secrets.RECIPIENT_EMAIL }}\"}},\"ImageRepositoryType\":\"ECR\"}}" \
+          --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ steps.build-image.outputs.image }}\",\"ImageConfiguration\":{\"Port\":\"3000\",\"RuntimeEnvironmentVariables\":{\"NODE_ENV\":\"production\",\"AWS_REGION\":\"${{ env.AWS_REGION }}\",\"AWS_ACCESS_KEY_ID\":\"${{ secrets.AWS_SES_ACCESS_KEY_ID }}\",\"AWS_SECRET_ACCESS_KEY\":\"${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}\",\"AWS_SES_FROM_EMAIL\":\"${{ secrets.AWS_SES_FROM_EMAIL }}\",\"RECIPIENT_EMAIL\":\"${{ secrets.RECIPIENT_EMAIL }}\",\"DATABASE_URL\":\"${{ secrets.DATABASE_URL }}\"}},\"ImageRepositoryType\":\"ECR\"}}" \
           --region ${{ env.AWS_REGION }}
 
     - name: Wait for deployment
@@ -65,3 +78,32 @@ jobs:
       run: |
         echo "Deployment completed successfully!"
         echo "Service URL: https://${{ secrets.APP_RUNNER_DOMAIN }}"
+
+  smoke-test:
+    name: Smoke tests (prod)
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Run UI tests against prod
+      # BASE_URL tells playwright.config.ts to skip starting a local server
+      # and run all tests directly against the live site.
+      # Tests that hit /api/contact without a mock will send a real email —
+      # this confirms SES is working end-to-end after every deploy.
+      env:
+        BASE_URL: https://${{ secrets.APP_RUNNER_DOMAIN }}
+      run: npm test

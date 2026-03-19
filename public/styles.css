@@ -350,6 +350,14 @@ textarea::placeholder {
     color: var(--apex-muted);
 }
 
+#preferredContact {
+    color: var(--apex-muted);
+}
+
+#preferredContact.has-value {
+    color: var(--white);
+}
+
 select option {
     background: var(--apex-dark);
     color: var(--white);
@@ -406,6 +414,97 @@ textarea {
     color: var(--apex-muted);
     margin-top: 12px;
     text-align: center;
+}
+
+/* Two-step form flow */
+#formStep2 {
+    display: none;
+}
+
+@keyframes stepFadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.step-fade-in {
+    animation: stepFadeIn 0.3s ease both;
+}
+
+.step2-intro {
+    font-size: 0.9rem;
+    color: var(--apex-muted);
+    margin: 0 0 18px;
+}
+
+/* ─── CONFIRMATION PANEL ─────────────────────────── */
+
+#formConfirmation {
+    display: none;
+}
+
+.confirmation-intro {
+    font-size: 0.85rem;
+    color: var(--apex-muted);
+    margin-bottom: 16px;
+}
+
+.confirmation-list {
+    border: 1px solid var(--apex-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.confirmation-row {
+    display: flex;
+    gap: 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--apex-border);
+    align-items: baseline;
+}
+
+.confirmation-row:last-child {
+    border-bottom: none;
+}
+
+.confirmation-row dt {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--apex-muted);
+    min-width: 90px;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.confirmation-row dd {
+    font-size: 0.9rem;
+    color: var(--white);
+    margin: 0;
+    padding: 0;
+}
+
+.btn-schedule-another {
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--apex-muted);
+    background: transparent;
+    border: 1px solid var(--apex-border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    width: 100%;
+}
+
+.btn-schedule-another:hover {
+    color: var(--white);
+    border-color: rgba(255,255,255,0.3);
 }
 
 /* Referral section */

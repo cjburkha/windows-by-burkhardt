@@ -1,0 +1,42 @@
+// Prisma schema — source of truth for the database structure.
+// To make a schema change:
+//   1. Edit this file
+//   2. Run: npx prisma migrate dev --name describe_your_change
+//   3. Commit both this file and the generated migration in prisma/migrations/
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Submission {
+  id               Int      @id @default(autoincrement())
+  submittedAt      DateTime @default(now())
+
+  // Required contact info
+  name             String
+  email            String
+  phone            String
+
+  // Optional address
+  address          String?
+  city             String?
+  state            String?
+  zip              String?
+
+  // Optional scheduling preferences
+  preferredDate    String?
+  preferredTime    String?
+  preferredContact String?
+
+  // Optional message
+  message          String?
+
+  // Optional referral
+  referralFirstName String?
+  referralLastName  String?
+  referralPhone     String?
+}

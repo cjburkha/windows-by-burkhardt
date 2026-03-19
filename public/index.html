@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Windows by Burkhardt — Schedule Your Free In-Home Consultation</title>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Merriweather+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -74,6 +75,7 @@
             </div>
 
             <form id="consultationForm" class="consultation-form">
+                <div id="formStep1">
                 <div class="field">
                     <input type="text" id="name" name="name" placeholder="Full Name *" required>
                 </div>
@@ -110,32 +112,72 @@
                     <div class="field">
                         <select id="preferredTime" name="preferredTime">
                             <option value="">Preferred Time</option>
-                            <option value="Morning (8am-12pm)">Morning (8am&#8211;12pm)</option>
-                            <option value="Afternoon (12pm-4pm)">Afternoon (12pm&#8211;4pm)</option>
-                            <option value="Evening (4pm-7pm)">Evening (4pm&#8211;7pm)</option>
+                            <option value="Morning (9am)">Morning (9am)</option>
+                            <option value="Afternoon (1pm)">Afternoon (1pm)</option>
+                            <option value="Evening (5pm)">Evening (5pm)</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="field">
-                    <textarea id="message" name="message" rows="4" placeholder="Tell us about your window needs — number of windows, style preferences, or anything else..."></textarea>
+                    <select id="preferredContact" name="preferredContact">
+                        <option value="">Preferred Method of Contact (optional)</option>
+                        <option value="Email">Email</option>
+                        <option value="Phone">Phone</option>
+                        <option value="Text">Text</option>
+                    </select>
                 </div>
 
+                <div class="field">
+                    <textarea id="message" name="message" rows="4" placeholder="Tell us about your window needs — number of windows, style preferences, or anything else..."></textarea>
+                </div>
+                </div><!-- /formStep1 -->
+
+                <div id="formStep2">
+                <p class="step2-intro">Almost done! Were you referred to us by someone?</p>
                 <fieldset class="referral-section">
-                    <legend>Referral <span class="optional">(optional)</span></legend>
-                    <p class="referral-note">Were you referred by someone? Let us know so we can thank them.</p>
+                    <legend>Referred by <span class="optional">(optional)</span></legend>
+                    <p class="referral-note">Let us know so we can thank them.</p>
                     <div class="field-row">
                         <div class="field">
-                            <input type="text" id="referralFirstName" name="referralFirstName" placeholder="Referral First Name">
+                            <input type="text" id="referralFirstName" name="referralFirstName" placeholder="First Name">
                         </div>
                         <div class="field">
-                            <input type="text" id="referralLastName" name="referralLastName" placeholder="Referral Last Name">
+                            <input type="text" id="referralLastName" name="referralLastName" placeholder="Last Name">
                         </div>
                     </div>
                     <div class="field">
-                        <input type="tel" id="referralPhone" name="referralPhone" placeholder="Referral Phone Number">
+                        <input type="tel" id="referralPhone" name="referralPhone" placeholder="Phone Number">
                     </div>
                 </fieldset>
+                </div><!-- /formStep2 -->
+
+                <div id="formConfirmation" class="form-confirmation">
+                    <p class="confirmation-intro">Here&#8217;s what we have on file for you:</p>
+                    <dl class="confirmation-list">
+                        <div class="confirmation-row">
+                            <dt>Name</dt>
+                            <dd id="confirmName"></dd>
+                        </div>
+                        <div class="confirmation-row">
+                            <dt>Email</dt>
+                            <dd id="confirmEmail"></dd>
+                        </div>
+                        <div class="confirmation-row">
+                            <dt>Phone</dt>
+                            <dd id="confirmPhone"></dd>
+                        </div>
+                        <div class="confirmation-row" id="confirmAddressRow">
+                            <dt>Address</dt>
+                            <dd id="confirmAddress"></dd>
+                        </div>
+                        <div class="confirmation-row" id="confirmScheduleRow">
+                            <dt>Preferred Time</dt>
+                            <dd id="confirmSchedule"></dd>
+                        </div>
+                    </dl>
+                    <button type="button" id="btnScheduleAnother" class="btn-schedule-another">Schedule Another Consultation</button>
+                </div><!-- /formConfirmation -->
 
                 <div class="field-submit">
                     <button type="submit" class="btn-submit">Schedule My Free Consultation</button>

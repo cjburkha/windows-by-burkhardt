@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const validator = require('validator');
 const xss = require('xss');
 const emailService = require('./services/emailService');
+const dbService    = require('./services/dbService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,10 +35,11 @@ app.use(cors({ origin: ['https://windowsbyburkhardt.com', 'https://www.windowsby
 app.use(bodyParser.json({ limit: '10kb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10kb' }));
 
-// Rate limit the contact endpoint: max 5 submissions per 15 min per IP
+// Rate limit the contact endpoint: max 5 submissions per 15 min per IP (production).
+// Relaxed to 100 in development/test so repeated test runs don't exhaust the limit.
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: process.env.NODE_ENV === 'production' ? 5 : 100,
   message: { success: false, message: 'Too many requests. Please wait 15 minutes before trying again.' },
   standardHeaders: true,
   legacyHeaders: false
@@ -53,7 +55,7 @@ app.get('/', (req, res) => {
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
-    let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, message,
+    let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
           referralFirstName, referralLastName, referralPhone } = req.body;
 
     // Validate required fields
@@ -82,6 +84,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     zip         = zip         ? validator.trim(zip).replace(/\D/g, '').substring(0, 5) : '';
     message     = message     ? xss(validator.trim(message))     : '';
     preferredTime = preferredTime ? validator.trim(preferredTime) : '';
+    preferredContact = preferredContact && ['Email','Phone','Text'].includes(preferredContact) ? preferredContact : '';
     referralFirstName = referralFirstName ? xss(validator.trim(referralFirstName)).substring(0, 100) : '';
     referralLastName  = referralLastName  ? xss(validator.trim(referralLastName)).substring(0, 100)  : '';
     referralPhone     = referralPhone     ? validator.trim(referralPhone).replace(/[^\d\s\-()+.]/g, '').substring(0, 20) : '';
@@ -94,14 +97,22 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     }
 
     const emailResult = await emailService.sendConsultationRequest({
-      name, email, phone, address, city, state, zip, preferredDate, preferredTime, message,
+      name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
       referralFirstName, referralLastName, referralPhone
     });
 
     if (emailResult.success) {
+      // Save to database — non-blocking. A DB failure logs but never fails the response.
+      dbService.saveSubmission({
+        name, email, phone, address, city, state, zip,
+        preferredDate, preferredTime, preferredContact, message,
+        referralFirstName, referralLastName, referralPhone
+      }).catch(err => console.error('DB save failed:', err.message));
+
       res.json({ 
         success: true, 
-        message: 'Your consultation request has been submitted successfully!' 
+        message: 'Your consultation request has been submitted successfully!',
+        ...((process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true') && { emailPreview: emailResult.emailBody })
       });
     } else {
       throw new Error(emailResult.error);

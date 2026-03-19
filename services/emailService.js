@@ -1,18 +1,19 @@
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 
-// Configure AWS SES client
-const sesClient = new SESClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
-});
-
 /**
  * Send consultation request email via AWS SES
  */
 async function sendConsultationRequest(formData) {
+  // Create the SES client here (not at module load) so it always
+  // reads the current env vars — avoids stale/undefined credentials
+  // when the module is first loaded before dotenv has run.
+  const sesClient = new SESClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.AWS_SES_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.AWS_SES_SECRET_ACCESS_KEY
+    }
+  });
   const {
     name,
     email,
@@ -23,6 +24,7 @@ async function sendConsultationRequest(formData) {
     zip,
     preferredDate,
     preferredTime,
+    preferredContact,
     message,
     referralFirstName,
     referralLastName,
@@ -47,6 +49,7 @@ Scheduling Preferences:
 ----------------------
 Preferred Date: ${preferredDate || 'Not specified'}
 Preferred Time: ${preferredTime || 'Not specified'}
+Preferred Contact: ${preferredContact || 'Not specified'}
 
 Additional Message:
 ------------------
@@ -61,6 +64,13 @@ Phone: ${referralPhone || 'Not provided'}
 This consultation request was submitted via Windows by Burkhardt website.
 Co-branded with Apex Energy Group.
   `;
+
+  // Skip real SES send in two cases:
+  //  1. NODE_ENV=test  — CI running the fake server
+  //  2. SKIP_EMAIL=true — real dev server started via `npm run test:dev`
+  if (process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true') {
+    return { success: true, messageId: 'test-mock-id', emailBody };
+  }
 
   const params = {
     Source: process.env.AWS_SES_FROM_EMAIL,
@@ -96,6 +106,7 @@ Co-branded with Apex Energy Group.
                 <h3 style="color: #2c5282; border-bottom: 2px solid #2c5282; padding-bottom: 5px;">Scheduling Preferences</h3>
                 <p><strong>Preferred Date:</strong> ${preferredDate || 'Not specified'}</p>
                 <p><strong>Preferred Time:</strong> ${preferredTime || 'Not specified'}</p>
+                <p><strong>Preferred Contact:</strong> ${preferredContact || 'Not specified'}</p>
                 
                 ${message ? `
                   <h3 style="color: #2c5282; border-bottom: 2px solid #2c5282; padding-bottom: 5px;">Additional Message</h3>

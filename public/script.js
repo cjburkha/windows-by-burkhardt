@@ -8,18 +8,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const today = new Date().toISOString().split('T')[0];
     dateInput.setAttribute('min', today);
 
+    // Style preferredContact like a placeholder when no value is selected
+    const preferredContactSelect = document.getElementById('preferredContact');
+    const updateContactColor = () => {
+        preferredContactSelect.classList.toggle('has-value', preferredContactSelect.value !== '');
+    };
+    preferredContactSelect.addEventListener('change', updateContactColor);
+
+    const step1 = document.getElementById('formStep1');
+    const step2 = document.getElementById('formStep2');
+    let formPhase = 1;
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        // Disable submit button
+        if (formPhase === 1) {
+            // Validate required fields in step 1 before advancing
+            const requiredInputs = step1.querySelectorAll('[required]');
+            for (const input of requiredInputs) {
+                if (!input.checkValidity()) {
+                    input.reportValidity();
+                    return;
+                }
+            }
+            // Transition to referral step
+            step1.style.display = 'none';
+            step2.style.display = 'block';
+            step2.classList.add('step-fade-in');
+            submitButton.textContent = 'Complete';
+            formPhase = 2;
+            return;
+        }
+
+        // Phase 2: submit the form
         submitButton.disabled = true;
         submitButton.textContent = 'Submitting...';
 
-        // Clear previous messages
         formMessage.className = 'form-message';
         formMessage.style.display = 'none';
 
-        // Gather form data
         const formData = {
             name: document.getElementById('name').value,
             email: document.getElementById('email').value,
@@ -30,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
             zip: document.getElementById('zip').value,
             preferredDate: document.getElementById('preferredDate').value,
             preferredTime: document.getElementById('preferredTime').value,
+            preferredContact: document.getElementById('preferredContact').value,
             message: document.getElementById('message').value,
             referralFirstName: document.getElementById('referralFirstName').value,
             referralLastName: document.getElementById('referralLastName').value,
@@ -39,27 +67,55 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/api/contact', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
 
             const result = await response.json();
 
             if (response.ok && result.success) {
-                // Success
                 formMessage.className = 'form-message success';
                 formMessage.textContent = result.message || 'Thank you! Your consultation request has been submitted successfully. We will contact you soon.';
                 formMessage.style.display = 'block';
 
-                // Reset form
-                form.reset();
+                // Populate confirmation panel with submitted data
+                document.getElementById('confirmName').textContent = formData.name;
+                document.getElementById('confirmEmail').textContent = formData.email;
+                document.getElementById('confirmPhone').textContent = formData.phone;
 
-                // Scroll to message
+                const addrParts = [];
+                if (formData.address) addrParts.push(formData.address);
+                const cityStateZip = [formData.city, formData.state, formData.zip].filter(Boolean).join(' ');
+                if (cityStateZip) addrParts.push(cityStateZip);
+                const confirmAddressRow = document.getElementById('confirmAddressRow');
+                if (addrParts.length) {
+                    document.getElementById('confirmAddress').textContent = addrParts.join(', ');
+                    confirmAddressRow.style.display = '';
+                } else {
+                    confirmAddressRow.style.display = 'none';
+                }
+
+                const scheduleParts = [formData.preferredDate, formData.preferredTime].filter(Boolean);
+                const confirmScheduleRow = document.getElementById('confirmScheduleRow');
+                if (scheduleParts.length) {
+                    document.getElementById('confirmSchedule').textContent = scheduleParts.join(' · ');
+                    confirmScheduleRow.style.display = '';
+                } else {
+                    confirmScheduleRow.style.display = 'none';
+                }
+
+                // Hide form steps and submit button, show confirmation panel
+                step2.style.display = 'none';
+                step2.classList.remove('step-fade-in');
+                document.getElementById('formConfirmation').style.display = 'block';
+                document.querySelector('.field-submit').style.display = 'none';
+                submitButton.textContent = 'Schedule My Free Consultation';
+                formPhase = 1;
+                form.reset();
+                updateContactColor();
+
                 formMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
-                // Error from server
                 throw new Error(result.message || 'Failed to submit form');
             }
         } catch (error) {
@@ -68,10 +124,21 @@ document.addEventListener('DOMContentLoaded', function() {
             formMessage.textContent = 'Sorry, there was an error submitting your request. Please try again or call us directly.';
             formMessage.style.display = 'block';
         } finally {
-            // Re-enable submit button
             submitButton.disabled = false;
-            submitButton.textContent = 'Schedule Consultation';
+            if (formPhase === 2) {
+                submitButton.textContent = 'Complete';
+            }
         }
+    });
+
+    // Schedule Another — reset UI so the user can submit a new request
+    document.getElementById('btnScheduleAnother').addEventListener('click', function() {
+        document.getElementById('formConfirmation').style.display = 'none';
+        document.querySelector('.field-submit').style.display = 'block';
+        formMessage.className = 'form-message';
+        formMessage.style.display = 'none';
+        step1.style.display = 'block';
+        submitButton.textContent = 'Schedule My Free Consultation';
     });
 
     // Phone number formatting
