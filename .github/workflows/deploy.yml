@@ -99,6 +99,9 @@ jobs:
     - name: Install Playwright browsers
       run: npx playwright install --with-deps chromium
 
+    - name: Generate Prisma client
+      run: npx prisma generate
+
     - name: Run UI tests against prod
       # BASE_URL tells playwright.config.ts to skip starting a local server
       # and run all tests directly against the live site.
