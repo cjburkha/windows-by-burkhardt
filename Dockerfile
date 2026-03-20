@@ -6,11 +6,16 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+# Copy Prisma schema so `prisma generate` can run during npm install
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies — skip lifecycle scripts (no git repo in Docker context)
+# then explicitly generate Prisma client
+RUN npm ci --only=production --ignore-scripts && \
+    npx prisma generate
 
-# Copy application files
+# Copy remaining application files
 COPY . .
 
 # Expose port
