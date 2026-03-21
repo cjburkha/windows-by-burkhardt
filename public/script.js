@@ -115,6 +115,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateContactColor();
 
                 formMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Track form submission as a lead conversion in GA4
+                if (typeof gtag === 'function') {
+                    gtag('event', 'generate_lead', {
+                        event_category: 'consultation',
+                        event_label: 'form_submission'
+                    });
+                }
             } else {
                 throw new Error(result.message || 'Failed to submit form');
             }
