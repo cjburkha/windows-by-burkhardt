@@ -100,37 +100,68 @@ fi
 echo ""
 echo "─── Step 4: ACM Certificate (us-east-1) ────────────"
 
-# CloudFront requires certs in us-east-1
-CERT_ARN=$(aws acm list-certificates \
-  --region us-east-1 \
-  --query "CertificateSummaryList[?DomainName=='$CUSTOM_DOMAIN' || DomainName=='*.$CUSTOM_DOMAIN'].CertificateArn" \
-  --output text 2>/dev/null | head -1)
+# CloudFront requires certs in us-east-1.
+#
+# If your account hasn't activated KMS yet, the automated request-certificate
+# call will fail with AccessDeniedException. In that case:
+#   1. Open https://console.aws.amazon.com/acm/home?region=us-east-1
+#   2. Click "Request certificate" → Public → enter windowsbyburkhardt.com
+#      and www.windowsbyburkhardt.com as SANs → DNS validation
+#   3. Add the CNAME records shown to your DNS provider
+#   4. Wait for status = ISSUED, then copy the certificate ARN and re-run:
+#        CERT_ARN=arn:aws:acm:us-east-1:... bash scripts/setup-static-cdn.sh
 
-if [ -z "$CERT_ARN" ] || [ "$CERT_ARN" = "None" ]; then
-  echo "    No existing certificate found — requesting new one..."
-  CERT_ARN=$(aws acm request-certificate \
+if [ -n "$CERT_ARN" ]; then
+  echo "    Using provided CERT_ARN (skipping lookup/creation)"
+else
+  # Search for an existing ISSUED cert that covers the domain (check primary name)
+  CERT_ARN=$(aws acm list-certificates \
     --region us-east-1 \
-    --domain-name "$CUSTOM_DOMAIN" \
-    --subject-alternative-names "$WWW_DOMAIN" \
-    --validation-method DNS \
-    --query "CertificateArn" \
-    --output text)
-  echo ""
-  echo "  ⚠️  ACTION REQUIRED — DNS Validation"
-  echo "  ─────────────────────────────────────────────────"
-  echo "  A new TLS certificate was requested. You must add"
-  echo "  a DNS CNAME record to validate it before continuing."
-  echo ""
-  echo "  Run this to see the CNAME to add:"
-  echo "    AWS_PROFILE=wbb-admin aws acm describe-certificate \\"
-  echo "      --certificate-arn $CERT_ARN \\"
-  echo "      --region us-east-1 \\"
-  echo "      --query 'Certificate.DomainValidationOptions'"
-  echo ""
-  echo "  Add the CNAME to your DNS provider, then wait ~5 min"
-  echo "  for validation, then re-run this script."
-  echo ""
-  read -p "Press ENTER once the cert is ISSUED (status: ISSUED) to continue..."
+    --certificate-statuses ISSUED \
+    --query "CertificateSummaryList[?DomainName=='$CUSTOM_DOMAIN' || DomainName=='$WWW_DOMAIN' || DomainName=='*.$CUSTOM_DOMAIN'].CertificateArn" \
+    --output text 2>/dev/null | head -1)
+
+  # Fallback: iterate all certs and check SANs (covers cases where domain is a SAN)
+  if [ -z "$CERT_ARN" ] || [ "$CERT_ARN" = "None" ]; then
+    ALL_ARNS=$(aws acm list-certificates \
+      --region us-east-1 \
+      --certificate-statuses ISSUED \
+      --query "CertificateSummaryList[].CertificateArn" \
+      --output text 2>/dev/null)
+    for ARN in $ALL_ARNS; do
+      COVERS=$(aws acm describe-certificate \
+        --certificate-arn "$ARN" \
+        --region us-east-1 \
+        --query "Certificate.SubjectAlternativeNames" \
+        --output text 2>/dev/null | grep -c "$CUSTOM_DOMAIN" || true)
+      if [ "$COVERS" -gt "0" ]; then
+        CERT_ARN="$ARN"
+        break
+      fi
+    done
+  fi
+
+  if [ -z "$CERT_ARN" ] || [ "$CERT_ARN" = "None" ]; then
+    echo ""
+    echo "  ⚠️  No existing ISSUED certificate found and automated creation requires"
+    echo "      KMS to be activated in your account."
+    echo ""
+    echo "  To create the certificate manually (takes ~2 min):"
+    echo "    1. Open https://console.aws.amazon.com/acm/home?region=us-east-1"
+    echo "    2. Click 'Request certificate' → Public certificate → Next"
+    echo "    3. Add both domain names:"
+    echo "         $CUSTOM_DOMAIN"
+    echo "         $WWW_DOMAIN"
+    echo "    4. Choose DNS validation → Request"
+    echo "    5. Click into the new cert → expand the domain → copy the CNAME"
+    echo "       records and add them to your DNS provider"
+    echo "    6. Wait ~5 min for status to become ISSUED"
+    echo "    7. Re-run this script with the cert ARN:"
+    echo ""
+    echo "         CERT_ARN=<arn> bash scripts/setup-static-cdn.sh"
+    echo ""
+    exit 1
+  fi
 fi
 
 CERT_STATUS=$(aws acm describe-certificate \
