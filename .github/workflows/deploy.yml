@@ -11,11 +11,73 @@ env:
   CONTAINER_NAME: windows-by-burkhardt
 
 jobs:
-  build-and-deploy:
-    # Tests already ran and passed on the develop branch (ci.yml).
-    # No need to re-run them here.
+  # ── Detect which parts of the repo changed ──────────────────────────────────
+  changes:
     runs-on: ubuntu-latest
-    
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend:  ${{ steps.filter.outputs.backend }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          frontend:
+            - 'public/**'
+          backend:
+            - 'server.js'
+            - 'services/**'
+            - 'prisma/**'
+            - 'prisma.config.ts'
+            - 'Dockerfile'
+            - 'package*.json'
+
+  # ── Frontend path: S3 sync + CloudFront invalidation (~15 seconds) ──────────
+  deploy-frontend:
+    name: Deploy static assets (S3 + CloudFront)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Sync CSS/JS assets (long cache — CloudFront invalidation refreshes)
+      run: |
+        aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
+          --delete \
+          --exclude "*.html" \
+          --cache-control "public,max-age=86400"
+
+    - name: Sync HTML (always revalidate)
+      run: |
+        aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
+          --exclude "*" --include "*.html" \
+          --cache-control "no-cache,no-store,must-revalidate"
+
+    - name: Invalidate CloudFront cache
+      run: |
+        INVALIDATION_ID=$(aws cloudfront create-invalidation \
+          --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+          --paths "/*" \
+          --query "Invalidation.Id" --output text)
+        echo "Invalidation ID: $INVALIDATION_ID"
+        echo "Static assets live at: https://${{ secrets.APP_RUNNER_DOMAIN }}"
+
+  # ── Backend path: Docker build → ECR push → App Runner deploy (~5 minutes) ──
+  deploy-backend:
+    name: Build & deploy API (Docker + App Runner)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -76,12 +138,19 @@ jobs:
 
     - name: Deployment complete
       run: |
-        echo "Deployment completed successfully!"
+        echo "API deployment complete!"
         echo "Service URL: https://${{ secrets.APP_RUNNER_DOMAIN }}"
 
+  # ── Smoke tests ──────────────────────────────────────────────────────────────
   smoke-test:
     name: Smoke tests (prod)
-    needs: build-and-deploy
+    needs: [changes, deploy-frontend, deploy-backend]
+    # Run when at least one deploy job ran and none failed.
+    # 'skipped' is OK (means that deploy path wasn't needed).
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -102,11 +171,22 @@ jobs:
     - name: Generate Prisma client
       run: npx prisma generate
 
-    - name: Run UI tests against prod
-      # BASE_URL tells playwright.config.ts to skip starting a local server
-      # and run all tests directly against the live site.
-      # Tests that hit /api/contact without a mock will send a real email —
-      # this confirms SES is working end-to-end after every deploy.
+    - name: Run smoke tests
+      # BASE_URL points to the CloudFront/site URL (update APP_RUNNER_DOMAIN secret
+      # to the CloudFront domain after running scripts/setup-static-cdn.sh).
+      #
+      # Test strategy:
+      #   Backend changed → full suite (20 tests, includes real SES send + DB write).
+      #   Frontend-only   → UI-only tests; skips "no mock" + DB tests to avoid
+      #                     spurious emails for every HTML/CSS tweak.
       env:
         BASE_URL: https://${{ secrets.APP_RUNNER_DOMAIN }}
-      run: npm test
+        BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
+      run: |
+        if [ "$BACKEND_CHANGED" = "true" ]; then
+          echo "Backend changed — running full test suite (includes SES + DB tests)"
+          npm test
+        else
+          echo "Frontend-only change — running UI tests (skipping real-API tests)"
+          npx playwright test --grep-invert "no mock|Database persistence"
+        fi
