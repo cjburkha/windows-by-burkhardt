@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 # One-time setup: S3 bucket + CloudFront distribution for static file hosting.
 #
-# Architecture after running this:
-#   Browser → CloudFront (windowsbyburkhardt.com)
+# Phase 1 (this script) — no ACM cert required:
+#   Browser → CloudFront (xxxx.cloudfront.net  — HTTPS via CloudFront default cert)
 #                 ├── /api/*   → App Runner  (Node.js API)
 #                 ├── /health  → App Runner
 #                 └── /*       → S3 bucket   (HTML/CSS/JS — instant deploys)
 #
+# Phase 2 (after ACM/KMS works) — attach custom domain:
+#   bash scripts/add-custom-domain.sh
+#   → adds windowsbyburkhardt.com alias + ACM cert to the distribution
+#
 # Usage:
 #   bash scripts/setup-static-cdn.sh
-#
-# After running:
-#   1. Update GitHub secret APP_RUNNER_DOMAIN → CloudFront domain printed below
-#   2. Add GitHub secrets: S3_BUCKET_NAME, CLOUDFRONT_DISTRIBUTION_ID
-#   3. Update DNS: point windowsbyburkhardt.com + www to the CloudFront domain
-#   4. Run: AWS_PROFILE=wbb-admin aws iam put-user-policy ... (printed at end)
 set -e
 
 export AWS_PROFILE="wbb-admin"
@@ -96,85 +94,11 @@ else
   echo "✔  Reusing existing OAC: $OAC_ID"
 fi
 
-# ── Step 4: ACM Certificate ────────────────────────────────────────────────────
+# ── Step 4: ACM Certificate — SKIPPED in Phase 1 ──────────────────────────────
 echo ""
-echo "─── Step 4: ACM Certificate (us-east-1) ────────────"
-
-# CloudFront requires certs in us-east-1.
-#
-# If your account hasn't activated KMS yet, the automated request-certificate
-# call will fail with AccessDeniedException. In that case:
-#   1. Open https://console.aws.amazon.com/acm/home?region=us-east-1
-#   2. Click "Request certificate" → Public → enter windowsbyburkhardt.com
-#      and www.windowsbyburkhardt.com as SANs → DNS validation
-#   3. Add the CNAME records shown to your DNS provider
-#   4. Wait for status = ISSUED, then copy the certificate ARN and re-run:
-#        CERT_ARN=arn:aws:acm:us-east-1:... bash scripts/setup-static-cdn.sh
-
-if [ -n "$CERT_ARN" ]; then
-  echo "    Using provided CERT_ARN (skipping lookup/creation)"
-else
-  # Search for an existing ISSUED cert that covers the domain (check primary name)
-  CERT_ARN=$(aws acm list-certificates \
-    --region us-east-1 \
-    --certificate-statuses ISSUED \
-    --query "CertificateSummaryList[?DomainName=='$CUSTOM_DOMAIN' || DomainName=='$WWW_DOMAIN' || DomainName=='*.$CUSTOM_DOMAIN'].CertificateArn" \
-    --output text 2>/dev/null | head -1)
-
-  # Fallback: iterate all certs and check SANs (covers cases where domain is a SAN)
-  if [ -z "$CERT_ARN" ] || [ "$CERT_ARN" = "None" ]; then
-    ALL_ARNS=$(aws acm list-certificates \
-      --region us-east-1 \
-      --certificate-statuses ISSUED \
-      --query "CertificateSummaryList[].CertificateArn" \
-      --output text 2>/dev/null)
-    for ARN in $ALL_ARNS; do
-      COVERS=$(aws acm describe-certificate \
-        --certificate-arn "$ARN" \
-        --region us-east-1 \
-        --query "Certificate.SubjectAlternativeNames" \
-        --output text 2>/dev/null | grep -c "$CUSTOM_DOMAIN" || true)
-      if [ "$COVERS" -gt "0" ]; then
-        CERT_ARN="$ARN"
-        break
-      fi
-    done
-  fi
-
-  if [ -z "$CERT_ARN" ] || [ "$CERT_ARN" = "None" ]; then
-    echo ""
-    echo "  ⚠️  No existing ISSUED certificate found and automated creation requires"
-    echo "      KMS to be activated in your account."
-    echo ""
-    echo "  To create the certificate manually (takes ~2 min):"
-    echo "    1. Open https://console.aws.amazon.com/acm/home?region=us-east-1"
-    echo "    2. Click 'Request certificate' → Public certificate → Next"
-    echo "    3. Add both domain names:"
-    echo "         $CUSTOM_DOMAIN"
-    echo "         $WWW_DOMAIN"
-    echo "    4. Choose DNS validation → Request"
-    echo "    5. Click into the new cert → expand the domain → copy the CNAME"
-    echo "       records and add them to your DNS provider"
-    echo "    6. Wait ~5 min for status to become ISSUED"
-    echo "    7. Re-run this script with the cert ARN:"
-    echo ""
-    echo "         CERT_ARN=<arn> bash scripts/setup-static-cdn.sh"
-    echo ""
-    exit 1
-  fi
-fi
-
-CERT_STATUS=$(aws acm describe-certificate \
-  --certificate-arn "$CERT_ARN" \
-  --region us-east-1 \
-  --query "Certificate.Status" \
-  --output text)
-
-if [ "$CERT_STATUS" != "ISSUED" ]; then
-  echo "❌  Certificate status is '$CERT_STATUS' (need ISSUED). Re-run after DNS validation."
-  exit 1
-fi
-echo "✔  Certificate: $CERT_ARN (ISSUED)"
+echo "─── Step 4: ACM cert — skipped (Phase 1 uses CloudFront default HTTPS) ───"
+echo "    Run scripts/add-custom-domain.sh after KMS/ACM is working to attach"
+echo "    windowsbyburkhardt.com with a real cert."
 
 # ── Step 5: CloudFront distribution ───────────────────────────────────────────
 echo ""
@@ -199,10 +123,7 @@ else
     \"CallerReference\": \"$CALLER_REF\",
     \"Comment\": \"wbb-prod\",
     \"DefaultRootObject\": \"index.html\",
-    \"Aliases\": {
-      \"Quantity\": 2,
-      \"Items\": [\"$CUSTOM_DOMAIN\", \"$WWW_DOMAIN\"]
-    },
+    \"Aliases\": {\"Quantity\": 0, \"Items\": []},
     \"Origins\": {
       \"Quantity\": 2,
       \"Items\": [
@@ -216,9 +137,10 @@ else
           \"Id\": \"AppRunner-wbb-api\",
           \"DomainName\": \"$APP_RUNNER_DOMAIN\",
           \"CustomOriginConfig\": {
+            \"HTTPPort\": 80,
             \"HTTPSPort\": 443,
             \"OriginProtocolPolicy\": \"https-only\",
-            \"OriginSSLProtocols\": {\"Quantity\": 1, \"Items\": [\"TLSv1.2\"]}
+            \"OriginSslProtocols\": {\"Quantity\": 1, \"Items\": [\"TLSv1.2\"]}
           }
         }
       ]
@@ -263,9 +185,7 @@ else
     \"Enabled\": true,
     \"HttpVersion\": \"http2\",
     \"ViewerCertificate\": {
-      \"ACMCertificateArn\": \"$CERT_ARN\",
-      \"SSLSupportMethod\": \"sni-only\",
-      \"MinimumProtocolVersion\": \"TLSv1.2_2021\"
+      \"CloudFrontDefaultCertificate\": true
     }
   }" --query "Distribution.{Id:Id,Domain:DomainName}" --output json)
 
@@ -304,27 +224,31 @@ echo "╔═══════════════════════�
 echo "║  DONE — next steps                                          ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
-echo "CloudFront domain : $CF_DOMAIN"
+echo "CloudFront domain : https://$CF_DOMAIN"
 echo "Distribution ID   : $CF_ID"
 echo "S3 bucket         : $BUCKET_NAME"
 echo ""
-echo "1. Add these GitHub secrets:"
-echo "     S3_BUCKET_NAME             = $BUCKET_NAME"
-echo "     CLOUDFRONT_DISTRIBUTION_ID = $CF_ID"
-echo "     APP_RUNNER_DOMAIN          = $CF_DOMAIN   ← update this (was App Runner URL)"
+echo "════ PHASE 1 COMPLETE ════"
 echo ""
-echo "   Run:"
-echo "     gh secret set S3_BUCKET_NAME --body '$BUCKET_NAME' --repo cjburkha/windows-by-burkhardt"
-echo "     gh secret set CLOUDFRONT_DISTRIBUTION_ID --body '$CF_ID' --repo cjburkha/windows-by-burkhardt"
-echo "     gh secret set APP_RUNNER_DOMAIN --body '$CF_DOMAIN' --repo cjburkha/windows-by-burkhardt"
+echo "The site is now live at https://$CF_DOMAIN"
+echo "(CloudFront default HTTPS — no custom domain yet)"
 echo ""
-echo "2. Update DNS at your registrar:"
-echo "     $CUSTOM_DOMAIN    ALIAS/CNAME → $CF_DOMAIN"
-echo "     $WWW_DOMAIN  ALIAS/CNAME → $CF_DOMAIN"
+echo "── Required: Add GitHub secrets ──────────────────────────────"
+echo "Run these 3 commands:"
 echo ""
-echo "3. Grant WBB-Deploy user S3 + CloudFront permissions:"
-echo "     AWS_PROFILE=wbb-admin aws iam put-user-policy \\"
-echo "       --user-name WBB-Deploy \\"
-echo "       --policy-name WBBDeployPolicy \\"
-echo "       --policy-document file://scripts/wbb-deploy-apprunner-policy.json"
+echo "  gh secret set S3_BUCKET_NAME --body '$BUCKET_NAME' --repo cjburkha/windows-by-burkhardt"
+echo "  gh secret set CLOUDFRONT_DISTRIBUTION_ID --body '$CF_ID' --repo cjburkha/windows-by-burkhardt"
+echo "  gh secret set APP_RUNNER_DOMAIN --body '$CF_DOMAIN' --repo cjburkha/windows-by-burkhardt"
+echo ""
+echo "── Required: Grant WBB-Deploy S3 + CloudFront permissions ────"
+echo ""
+echo "  AWS_PROFILE=wbb-admin aws iam put-user-policy \\"
+echo "    --user-name WBB-Deploy \\"
+echo "    --policy-name WBBDeployPolicy \\"
+echo "    --policy-document file://scripts/wbb-deploy-apprunner-policy.json"
+echo ""
+echo "── Phase 2 (later): attach windowsbyburkhardt.com ────────────"
+echo ""
+echo "  Once ACM/KMS is fully working:"
+echo "  bash scripts/add-custom-domain.sh"
 echo ""
