@@ -175,6 +175,10 @@ jobs:
       # BASE_URL points to the CloudFront/site URL (update APP_RUNNER_DOMAIN secret
       # to the CloudFront domain after running scripts/setup-static-cdn.sh).
       #
+      # navigator.webdriver is true in all Playwright sessions, so analytics.js
+      # automatically sends smoke test traffic to GA4 DebugView only —
+      # excluded from standard reports without any URL changes needed.
+      #
       # Test strategy:
       #   Backend changed → full suite (20 tests, includes real SES send + DB write).
       #   Frontend-only   → UI-only tests; skips "no mock" + DB tests to avoid
