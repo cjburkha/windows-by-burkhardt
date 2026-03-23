@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
             step2.classList.add('step-fade-in');
             submitButton.textContent = 'Complete';
             formPhase = 2;
+            if (typeof window.wbbTrack === 'function') window.wbbTrack('form_step1_complete');
             return;
         }
 
@@ -116,12 +117,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 formMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                // Track form submission as a lead conversion in GA4
-                if (typeof gtag === 'function') {
-                    gtag('event', 'generate_lead', {
-                        event_category: 'consultation',
-                        event_label: 'form_submission'
-                    });
+                // Step 4 of funnel: consultation request fully submitted
+                if (typeof window.wbbTrack === 'function') {
+                    window.wbbTrack('generate_lead', { event_label: 'form_submission' });
                 }
             } else {
                 throw new Error(result.message || 'Failed to submit form');
