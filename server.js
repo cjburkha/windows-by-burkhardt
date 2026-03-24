@@ -48,11 +48,34 @@ const contactLimiter = rateLimit({
 });
 
 // Serve static files
-app.use(express.static('public'));
+// HTML: always revalidate so browsers pick up new deploys immediately.
+// CSS/JS/images: 1-day cache — CloudFront invalidation clears CDN on deploy;
+//   the ASSET_VERSION query string in index.html busts browser caches.
+app.use(express.static('public', {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
+}));
+
+// Inject ASSET_VERSION (git SHA or timestamp) into index.html so CSS/JS
+// cache-buster query strings update automatically on every deploy.
+const ASSET_VERSION = process.env.ASSET_VERSION || Date.now().toString();
+const fs = require('fs');
+let indexHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+indexHtml = indexHtml
+  .replace(/href="styles\.css(\?[^"]*)?"/g, `href="styles.css?v=${ASSET_VERSION}"`)
+  .replace(/src="script\.js(\?[^"]*)?"/g, `src="script.js?v=${ASSET_VERSION}"`)
+  .replace(/src="analytics\.js(\?[^"]*)?"/g, `src="analytics.js?v=${ASSET_VERSION}"`);
 
 // Routes
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Content-Type', 'text/html');
+  res.send(indexHtml);
 });
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
