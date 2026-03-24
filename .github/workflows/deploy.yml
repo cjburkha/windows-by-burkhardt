@@ -26,6 +26,11 @@ jobs:
           frontend:
             - 'public/**'
           backend:
+            # NOTE: public/** is included here until windowsbyburkhardt.com DNS
+            # points to CloudFront. While App Runner serves the custom domain,
+            # CSS/JS/HTML changes must rebuild the Docker image to take effect.
+            # Remove 'public/**' from this list after DNS cutover to CloudFront.
+            - 'public/**'
             - 'server.js'
             - 'services/**'
             - 'prisma/**'
