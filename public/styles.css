@@ -370,6 +370,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
+/* Mobile Chrome renders the date field's mm/dd/yyyy hint text via internal
+   webkit pseudo-elements that don't inherit color from the input rule.
+   Force them white so they're visible on the dark background. */
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+    color: var(--white);
+}
+
+/* Show placeholder-style muted color when no date is selected */
+input[type="date"]:not(:valid):not(:focus)::-webkit-datetime-edit-month-field,
+input[type="date"]:not(:valid):not(:focus)::-webkit-datetime-edit-day-field,
+input[type="date"]:not(:valid):not(:focus)::-webkit-datetime-edit-year-field,
+input[type="date"]:not(:valid):not(:focus)::-webkit-datetime-edit-text {
+    color: var(--apex-muted);
+}
+
 input:focus,
 select:focus,
 textarea:focus {
