@@ -16,8 +16,9 @@
     "db:create:dev": "bash scripts/create-rds.sh dev",
     "db:create:prod": "bash scripts/create-rds.sh prod",
     "setup:dev": "bash scripts/setup-dev.sh",
-    "deploy:watch": "gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') && gh run view $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --log-failed 2>&1 | tail -100",
+    "deploy:watch": "gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') && npm run deploy:report",
     "deploy:log": "gh run view $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --log-failed 2>&1 | tail -150",
+    "deploy:report": "gh run download $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') -n playwright-report -D playwright-report 2>&1 && open playwright-report/index.html",
     "prepare": "node scripts/install-hooks.js"
   },
   "keywords": [
