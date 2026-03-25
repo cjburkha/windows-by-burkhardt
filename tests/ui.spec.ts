@@ -366,5 +366,6 @@ test.describe('Database persistence', () => {
     expect(row!['referralFirstName']).toBe('Ref');
     expect(row!['referralLastName']).toBe('Person');
     expect(row!['referralPhone']).toBe('(555) 999-0000');  // auto-formatted by the referral phone input handler
+    expect(row!['tenantId']).toBe('burkhardt');            // submission is saved with the resolved tenant ID
   });
 });

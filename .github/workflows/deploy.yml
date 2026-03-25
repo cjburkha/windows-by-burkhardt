@@ -172,19 +172,21 @@ jobs:
       run: npx prisma generate
 
     - name: Run smoke tests
-      # BASE_URL points to the CloudFront/site URL (update APP_RUNNER_DOMAIN secret
-      # to the CloudFront domain after running scripts/setup-static-cdn.sh).
+      # BASE_URL points to the Burkhardt CloudFront domain (APP_RUNNER_DOMAIN secret).
+      # JOSE_BASE_URL points to the Jose CloudFront domain — enables the "jose"
+      # Playwright project which runs tenants.spec.ts against windowsbyjose.com.
       #
       # navigator.webdriver is true in all Playwright sessions, so analytics.js
       # automatically sends smoke test traffic to GA4 DebugView only —
       # excluded from standard reports without any URL changes needed.
       #
       # Test strategy:
-      #   Backend changed → full suite (20 tests, includes real SES send + DB write).
+      #   Backend changed → full suite (all tests, includes real SES send + DB write).
       #   Frontend-only   → UI-only tests; skips "no mock" + DB tests to avoid
       #                     spurious emails for every HTML/CSS tweak.
       env:
-        BASE_URL: https://${{ secrets.APP_RUNNER_DOMAIN }}
+        BASE_URL:      https://${{ secrets.APP_RUNNER_DOMAIN }}
+        JOSE_BASE_URL: https://windowsbyjose.com
         BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
       run: |
         if [ "$BACKEND_CHANGED" = "true" ]; then

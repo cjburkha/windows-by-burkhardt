@@ -12,30 +12,55 @@ const dbService    = require('./services/dbService');
 
 // ── Tenant registry ──────────────────────────────────────────────────────────────────
 // Tenants are loaded from the DB at startup and held in memory.
-// The FALLBACK_TENANT is used in dev/test (no DB) and as a safety net
-// if the DB is temporarily unavailable at boot.
-const FALLBACK_TENANT = {
-  id:             'burkhardt',
-  domain:         'windowsbyburkhardt.com',
-  brandName:      'Windows by Burkhardt',
-  tagline:        'We come to you — schedule your free, no-pressure consultation today.',
-  fromEmail:      'noreply@windowsbyburkhardt.com',
-  recipientEmail: 'chris.burkhardt@live.com',
-  ga4Id:          'G-2CC9WZ2Q8V',
+//
+// FALLBACK_TENANTS serves two purposes:
+//   1. Dev/test — no DB available, use hardcoded values.
+//   2. Production safety net — if DB is unreachable at boot, site still works.
+//
+// Tenant resolution order (first match wins):
+//   a. TEST_HOSTNAME env var  — only in NODE_ENV=test, lets CI run two server
+//      instances (ports 3000/3001) each simulating a different tenant.
+//   b. X-Tenant-Domain header — set as a custom CloudFront origin header per
+//      distribution so App Runner sees the viewer domain, not the CF origin.
+//   c. req.hostname fallback  — works for direct App Runner / local dev.
+const FALLBACK_TENANTS = {
+  'windowsbyburkhardt.com': {
+    id:             'burkhardt',
+    domain:         'windowsbyburkhardt.com',
+    brandName:      'Windows by Burkhardt',
+    tagline:        'We come to you — schedule your free, no-pressure consultation today.',
+    fromEmail:      'noreply@windowsbyburkhardt.com',
+    recipientEmail: 'chris.burkhardt@live.com',
+    ga4Id:          'G-2CC9WZ2Q8V',
+  },
+  'windowsbyjose.com': {
+    id:             'jose',
+    domain:         'windowsbyjose.com',
+    brandName:      'Windows by Jose',
+    tagline:        'Work with the best, work with Jose.',
+    fromEmail:      'noreply@windowsbyjose.com',
+    recipientEmail: 'chris.burkhardt@live.com',
+    ga4Id:          'G-LCG2HZB0GD',
+  },
 };
 
-let tenantMap = { 'windowsbyburkhardt.com': FALLBACK_TENANT };
+let tenantMap = { ...FALLBACK_TENANTS };
 
-function resolveTenant(hostname) {
-  const domain = (hostname || '').replace(/^www\./, '');
-  return tenantMap[domain] || FALLBACK_TENANT;
+function resolveTenant(req) {
+  const raw =
+    (process.env.NODE_ENV === 'test' && process.env.TEST_HOSTNAME)
+      ? process.env.TEST_HOSTNAME
+      : (req.headers['x-tenant-domain'] || req.hostname || '');
+  const domain = raw.replace(/^www\./, '');
+  return tenantMap[domain] || FALLBACK_TENANTS['windowsbyburkhardt.com'];
 }
 
 async function loadTenants() {
   try {
     const tenants = await dbService.getActiveTenants();
-    const map = {};
-    for (const t of tenants) map[t.domain] = t;
+    if (tenants.length === 0) return; // no DB — keep fallback map
+    const map = { ...FALLBACK_TENANTS }; // start from fallback so both tenants exist
+    for (const t of tenants) map[t.domain] = t; // DB values override fallbacks
     tenantMap = map;
     console.log(`Loaded ${tenants.length} tenant(s): ${Object.keys(map).join(', ')}`);
   } catch (err) {
@@ -134,7 +159,7 @@ loadTenants();
 
 // Routes
 app.get('/', (req, res) => {
-  const tenant = resolveTenant(req.hostname);
+  const tenant = resolveTenant(req);
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Content-Type', 'text/html');
   res.send(renderHtml(tenant));
@@ -142,7 +167,7 @@ app.get('/', (req, res) => {
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
-    const tenant = resolveTenant(req.hostname);
+    const tenant = resolveTenant(req);
     let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
           referralFirstName, referralLastName, referralPhone } = req.body;
 
