@@ -86,9 +86,9 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://wbb-static-prod.s3.us-east-1.amazonaws.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "https://www.googletagmanager.com"],
+      scriptSrc: ["'self'", "https://www.googletagmanager.com", "https://wbb-static-prod.s3.us-east-1.amazonaws.com"],
       imgSrc: ["'self'", "data:", "https://www.google-analytics.com"],
       connectSrc: ["'self'", "https://www.google-analytics.com", "https://analytics.google.com", "https://region1.google-analytics.com", "https://stats.g.doubleclick.net"],
       frameSrc: ["'none'"],
@@ -142,14 +142,19 @@ app.use(express.static('public', {
 
 // Inject ASSET_VERSION (git SHA or timestamp) into index.html so CSS/JS
 // cache-buster query strings update automatically on every deploy.
+// ASSET_BASE_URL is the S3 bucket URL in production — static assets are served
+// from S3 so CSS/JS changes can deploy in ~15s without a Docker rebuild.
+// In local dev (ASSET_BASE_URL unset) Express serves them directly.
 // {{TENANT_*}} tokens are replaced per-request by renderHtml().
 const ASSET_VERSION = process.env.ASSET_VERSION || Date.now().toString();
+const ASSET_BASE    = (process.env.ASSET_BASE_URL || '').replace(/\/$/, '');
+const pfx = (name) => ASSET_BASE ? `${ASSET_BASE}/${name}` : name;
 const fs = require('fs');
 let indexHtmlTemplate = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
 indexHtmlTemplate = indexHtmlTemplate
-  .replace(/href="styles\.css(\?[^"]*)?"/g, `href="styles.css?v=${ASSET_VERSION}"`)
-  .replace(/src="script\.js(\?[^"]*)?"/g,   `src="script.js?v=${ASSET_VERSION}"`)
-  .replace(/src="analytics\.js(\?[^"]*)?"/g, `src="analytics.js?v=${ASSET_VERSION}"`);
+  .replace(/href="styles\.css(\?[^"]*)?"/g,   `href="${pfx('styles.css')}?v=${ASSET_VERSION}"`)
+  .replace(/src="script\.js(\?[^"]*)?"/g,     `src="${pfx('script.js')}?v=${ASSET_VERSION}"`)
+  .replace(/src="analytics\.js(\?[^"]*)?"/g,  `src="${pfx('analytics.js')}?v=${ASSET_VERSION}"`);
 
 function renderHtml(tenant) {
   let html = indexHtmlTemplate

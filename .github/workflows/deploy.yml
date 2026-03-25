@@ -11,11 +11,63 @@ env:
   CONTAINER_NAME: windows-by-burkhardt
 
 jobs:
-  # ── Deploy: Docker build → ECR push → App Runner update (~5 minutes) ────────
-  # Static assets (CSS/JS) are baked into the Docker image and served by Express.
-  # App Runner native custom domains handle TLS — no CloudFront needed.
-  deploy:
-    name: Build & deploy (Docker + App Runner)
+  # ── Detect which parts changed ───────────────────────────────────────────────
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend:  ${{ steps.filter.outputs.backend }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          frontend:
+            - 'public/**'
+            - '!public/index.html'
+          backend:
+            - 'server.js'
+            - 'services/**'
+            - 'prisma/**'
+            - 'prisma.config.ts'
+            - 'Dockerfile'
+            - 'package*.json'
+            - 'public/index.html'
+
+  # ── Fast path: CSS/JS/images → S3 sync (~15 seconds) ─────────────────────────
+  # index.html is excluded — it's rendered server-side with tenant tokens.
+  # Static files are served from S3 directly (ASSET_BASE_URL in App Runner env).
+  deploy-frontend:
+    name: Deploy static assets (S3 ~15s)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Sync static assets to S3
+      run: |
+        aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
+          --exclude "*.html" \
+          --cache-control "public,max-age=86400" \
+          --delete
+        echo "Static assets synced to s3://${{ secrets.S3_BUCKET_NAME }}"
+
+  # ── Slow path: Docker build → ECR → App Runner (~2–5 minutes) ────────────────
+  # Docker BuildKit GHA cache: node_modules layer is reused when package.json
+  # is unchanged, cutting build time from ~3 min to ~45s for code-only changes.
+  deploy-backend:
+    name: Build & deploy API (Docker + App Runner)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -57,6 +109,8 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
       run: |
         docker buildx build --platform linux/amd64 --provenance=false \
+          --cache-from type=gha \
+          --cache-to   type=gha,mode=max \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
           --push .
@@ -66,7 +120,7 @@ jobs:
       run: |
         aws apprunner update-service \
           --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
-          --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ steps.build-image.outputs.image }}\",\"ImageConfiguration\":{\"Port\":\"3000\",\"RuntimeEnvironmentVariables\":{\"NODE_ENV\":\"production\",\"ASSET_VERSION\":\"${{ github.sha }}\",\"AWS_REGION\":\"${{ env.AWS_REGION }}\",\"AWS_ACCESS_KEY_ID\":\"${{ secrets.AWS_SES_ACCESS_KEY_ID }}\",\"AWS_SECRET_ACCESS_KEY\":\"${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}\",\"AWS_SES_FROM_EMAIL\":\"${{ secrets.AWS_SES_FROM_EMAIL }}\",\"RECIPIENT_EMAIL\":\"${{ secrets.RECIPIENT_EMAIL }}\",\"DATABASE_URL\":\"${{ secrets.DATABASE_URL }}\"}},\"ImageRepositoryType\":\"ECR\"}}" \
+          --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ steps.build-image.outputs.image }}\",\"ImageConfiguration\":{\"Port\":\"3000\",\"RuntimeEnvironmentVariables\":{\"NODE_ENV\":\"production\",\"ASSET_VERSION\":\"${{ github.sha }}\",\"ASSET_BASE_URL\":\"https://wbb-static-prod.s3.us-east-1.amazonaws.com\",\"AWS_REGION\":\"${{ env.AWS_REGION }}\",\"AWS_ACCESS_KEY_ID\":\"${{ secrets.AWS_SES_ACCESS_KEY_ID }}\",\"AWS_SECRET_ACCESS_KEY\":\"${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}\",\"AWS_SES_FROM_EMAIL\":\"${{ secrets.AWS_SES_FROM_EMAIL }}\",\"RECIPIENT_EMAIL\":\"${{ secrets.RECIPIENT_EMAIL }}\",\"DATABASE_URL\":\"${{ secrets.DATABASE_URL }}\"}},\"ImageRepositoryType\":\"ECR\"}}" \
           --region ${{ env.AWS_REGION }}
 
     - name: Wait for App Runner deployment
@@ -95,8 +149,13 @@ jobs:
   # ── Smoke tests ──────────────────────────────────────────────────────────────
   smoke-test:
     name: Smoke tests (prod)
-    needs: deploy
-    if: success()
+    needs: [changes, deploy-frontend, deploy-backend]
+    # Run when at least one deploy job ran and none failed.
+    # 'skipped' is OK (means that deploy path wasn't needed).
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
