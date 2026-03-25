@@ -21,12 +21,14 @@ import { test, expect } from '@playwright/test';
 const TENANTS = {
   burkhardt: {
     brandName: 'Windows by Burkhardt',
-    tagline:   'We come to you',            // partial — avoids em-dash encoding differences
+    headline:  'gotta be',              // partial match — avoids HTML entity encoding differences
+    favicon:   '/favicon.svg',
     ga4Id:     'G-2CC9WZ2Q8V',
   },
   jose: {
     brandName: 'Windows by Jose',
-    tagline:   'Work with the best, work with Jose',
+    headline:  'Work with the best',
+    favicon:   '/favicon-jose.svg',
     ga4Id:     'G-LCG2HZB0GD',
   },
 } as const;
@@ -51,9 +53,20 @@ test.describe('Tenant branding', () => {
     await expect(page.locator('.brand-name')).toContainText(t(info.project.name).brandName);
   });
 
-  test('hero tagline is correct', async ({ page }, info) => {
+  test('hero h1 contains correct headline', async ({ page }, info) => {
     await page.goto('/');
-    await expect(page.locator('.hero-sub')).toContainText(t(info.project.name).tagline);
+    await expect(page.locator('.hero-content h1')).toContainText(t(info.project.name).headline);
+  });
+
+  test('hero sub is the constant tagline (same on all tenants)', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.hero-sub')).toContainText('We come to you');
+  });
+
+  test('favicon href is correct for tenant', async ({ page }, info) => {
+    await page.goto('/');
+    const href = await page.locator('link[rel="icon"]').getAttribute('href');
+    expect(href).toBe(t(info.project.name).favicon);
   });
 
   test('GA4 meta tag has correct measurement ID', async ({ page }, info) => {

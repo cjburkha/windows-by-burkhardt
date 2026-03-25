@@ -16,7 +16,8 @@ model Tenant {
   id             String       @id           // 'burkhardt', 'jose'
   domain         String       @unique       // 'windowsbyburkhardt.com'
   brandName      String
-  tagline        String
+  headline       String
+  favicon        String       @default('/favicon.svg')
   fromEmail      String
   recipientEmail String
   ga4Id          String

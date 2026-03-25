@@ -27,7 +27,8 @@ const FALLBACK_TENANTS = {
     id:             'burkhardt',
     domain:         'windowsbyburkhardt.com',
     brandName:      'Windows by Burkhardt',
-    tagline:        'We come to you — schedule your free, no-pressure consultation today.',
+    headline:       'There&#8217;s gotta be<br><em>a better window.</em>',
+    favicon:        '/favicon.svg',
     fromEmail:      'noreply@windowsbyburkhardt.com',
     recipientEmail: 'chris.burkhardt@live.com',
     ga4Id:          'G-2CC9WZ2Q8V',
@@ -36,7 +37,8 @@ const FALLBACK_TENANTS = {
     id:             'jose',
     domain:         'windowsbyjose.com',
     brandName:      'Windows by Jose',
-    tagline:        'Work with the best, work with Jose.',
+    headline:       'Work with the best,<br>work with Jose.',
+    favicon:        '/favicon-jose.svg',
     fromEmail:      'noreply@windowsbyjose.com',
     recipientEmail: 'chris.burkhardt@live.com',
     ga4Id:          'G-LCG2HZB0GD',
@@ -159,8 +161,9 @@ indexHtmlTemplate = indexHtmlTemplate
 function renderHtml(tenant) {
   let html = indexHtmlTemplate
     .replace(/\{\{TENANT_BRAND_NAME\}\}/g, tenant.brandName)
-    .replace(/\{\{TENANT_TAGLINE\}\}/g,    tenant.tagline)
-    .replace(/\{\{TENANT_GA4_ID\}\}/g,     tenant.ga4Id || '');
+    .replace(/\{\{TENANT_HEADLINE\}\}/g,    tenant.headline)
+    .replace(/\{\{TENANT_FAVICON\}\}/g,     tenant.favicon || '/favicon.svg')
+    .replace(/\{\{TENANT_GA4_ID\}\}/g,      tenant.ga4Id || '');
   // Strip the gtag loader script entirely when no GA4 ID is configured
   if (!tenant.ga4Id) {
     html = html.replace(/<script[^>]*googletagmanager\.com[^>]*><\/script>\n?/g, '');
