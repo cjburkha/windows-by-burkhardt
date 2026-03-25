@@ -51,8 +51,19 @@ async function saveSubmission(data) {
       referralFirstName: data.referralFirstName || null,
       referralLastName:  data.referralLastName  || null,
       referralPhone:     data.referralPhone     || null,
+      tenantId:          data.tenantId          || 'burkhardt',
     },
   });
 }
 
-module.exports = { saveSubmission };
+/**
+ * Return all active tenants. Used by server.js to build the in-memory
+ * hostname → tenant map at startup.
+ */
+async function getActiveTenants() {
+  if (!process.env.DATABASE_URL) return [];
+  const client = getClient();
+  return client.tenant.findMany({ where: { active: true } });
+}
+
+module.exports = { saveSubmission, getActiveTenants };

@@ -3,6 +3,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const formMessage = document.getElementById('formMessage');
     const submitButton = form.querySelector('.btn-submit');
 
+    // ── GA4 funnel: Step 1 — CTA clicks ──────────────────────────────────────
+    // Selects every element that scrolls to the form (href OR class fallback).
+    var seen = new Set();
+    document.querySelectorAll('a[href="#schedule"], .btn-hero, .nav-cta, .btn-outline').forEach(function(el) {
+        if (seen.has(el)) return;
+        seen.add(el);
+        el.addEventListener('click', function() {
+            if (typeof window.wbbTrack === 'function') {
+                window.wbbTrack('schedule_cta_click', {
+                    event_label: el.textContent.trim().slice(0, 50)
+                });
+            }
+        });
+    });
+
+    // ── GA4 funnel: Step 2 — first form field interaction ────────────────────
+    var formEngaged = false;
+    form.addEventListener('focusin', function(e) {
+        if (!formEngaged && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+            formEngaged = true;
+            if (typeof window.wbbTrack === 'function') window.wbbTrack('form_engagement');
+        }
+    });
+
     // Set minimum date to today
     const dateInput = document.getElementById('preferredDate');
     const today = new Date().toISOString().split('T')[0];
@@ -119,7 +143,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Step 4 of funnel: consultation request fully submitted
                 if (typeof window.wbbTrack === 'function') {
-                    window.wbbTrack('generate_lead', { event_label: 'form_submission' });
+                    var hasReferral = !!(
+                        document.getElementById('referralFirstName').value.trim() ||
+                        document.getElementById('referralLastName').value.trim() ||
+                        document.getElementById('referralPhone').value.trim()
+                    );
+                    window.wbbTrack('generate_lead', {
+                        event_label: 'form_submission',
+                        has_referral: hasReferral
+                    });
                 }
             } else {
                 throw new Error(result.message || 'Failed to submit form');

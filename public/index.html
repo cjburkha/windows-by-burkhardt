@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Windows by Burkhardt — Schedule Your Free In-Home Consultation</title>
+    <title>{{TENANT_BRAND_NAME}} — Schedule Your Free In-Home Consultation</title>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Merriweather+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta name="wbb-ga4-id" content="{{TENANT_GA4_ID}}">
     <link rel="stylesheet" href="styles.css">
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2CC9WZ2Q8V"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{TENANT_GA4_ID}}"></script>
     <script src="analytics.js"></script>
 </head>
 <body>
@@ -17,7 +18,7 @@
     <header>
         <div class="header-inner">
             <div class="brand-primary">
-                <span class="brand-name">Windows by Burkhardt</span>
+                <a href="/" class="brand-name">{{TENANT_BRAND_NAME}}</a>
                 <span class="brand-divider"></span>
                 <span class="brand-sub">An <strong>Apex Energy Group</strong> Partner</span>
             </div>
@@ -33,7 +34,7 @@
         <div class="hero-content">
             <p class="hero-eyebrow">Free In-Home Consultations</p>
             <h1>There&#8217;s gotta be<br><em>a better window.</em></h1>
-            <p class="hero-sub">We come to you — schedule your free, no-pressure consultation today.</p>
+            <p class="hero-sub">{{TENANT_TAGLINE}}</p>
             <a href="#schedule" class="btn-hero">Schedule My Free Consultation</a>
         </div>
     </section>
@@ -198,7 +199,7 @@
             <div class="apex-text">
                 <p class="section-eyebrow">Our Promise</p>
                 <h2>Your home is where<br><em>life happens.</em></h2>
-                <p>Windows by Burkhardt operates as a proud partner of Apex Energy Group &#8212; one of America&#8217;s fastest-growing home improvement companies. That means you get the personal touch of a family business backed by the resources and product quality of a national brand.</p>
+                <p>{{TENANT_BRAND_NAME}} operates as a proud partner of Apex Energy Group &#8212; one of America&#8217;s fastest-growing home improvement companies. That means you get the personal touch of a family business backed by the resources and product quality of a national brand.</p>
                 <a href="#schedule" class="btn-outline">Schedule a Consultation</a>
             </div>
             <div class="apex-badge">
@@ -213,7 +214,7 @@
     <footer>
         <div class="footer-inner">
             <div class="footer-brand">
-                <p class="footer-name">Windows by Burkhardt</p>
+                <p class="footer-name">{{TENANT_BRAND_NAME}}</p>
                 <p class="footer-partner">An Apex Energy Group Authorized Partner</p>
             </div>
             <div class="footer-links">
@@ -222,7 +223,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 Windows by Burkhardt. All rights reserved.</p>
+            <p>&copy; 2026 {{TENANT_BRAND_NAME}}. All rights reserved.</p>
         </div>
     </footer>
 

@@ -10,6 +10,39 @@ const xss = require('xss');
 const emailService = require('./services/emailService');
 const dbService    = require('./services/dbService');
 
+// ── Tenant registry ──────────────────────────────────────────────────────────────────
+// Tenants are loaded from the DB at startup and held in memory.
+// The FALLBACK_TENANT is used in dev/test (no DB) and as a safety net
+// if the DB is temporarily unavailable at boot.
+const FALLBACK_TENANT = {
+  id:             'burkhardt',
+  domain:         'windowsbyburkhardt.com',
+  brandName:      'Windows by Burkhardt',
+  tagline:        'We come to you — schedule your free, no-pressure consultation today.',
+  fromEmail:      'noreply@windowsbyburkhardt.com',
+  recipientEmail: 'chris.burkhardt@live.com',
+  ga4Id:          'G-2CC9WZ2Q8V',
+};
+
+let tenantMap = { 'windowsbyburkhardt.com': FALLBACK_TENANT };
+
+function resolveTenant(hostname) {
+  const domain = (hostname || '').replace(/^www\./, '');
+  return tenantMap[domain] || FALLBACK_TENANT;
+}
+
+async function loadTenants() {
+  try {
+    const tenants = await dbService.getActiveTenants();
+    const map = {};
+    for (const t of tenants) map[t.domain] = t;
+    tenantMap = map;
+    console.log(`Loaded ${tenants.length} tenant(s): ${Object.keys(map).join(', ')}`);
+  } catch (err) {
+    console.warn('Could not load tenants from DB, using fallback config:', err.message);
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -31,7 +64,18 @@ app.use(helmet({
     }
   }
 }));
-app.use(cors({ origin: ['https://windowsbyburkhardt.com', 'https://www.windowsbyburkhardt.com'] }));
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // same-origin requests
+    try {
+      const domain = new URL(origin).hostname.replace(/^www\./, '');
+      if (domain === 'localhost' || domain === '127.0.0.1' || tenantMap[domain]) {
+        return callback(null, true);
+      }
+    } catch (e) {}
+    callback(new Error('Not allowed by CORS'));
+  }
+}));
 
 // Limit request body size to 10kb to prevent payload flooding
 app.use(bodyParser.json({ limit: '10kb' }));
@@ -63,23 +107,40 @@ app.use(express.static('public', {
 
 // Inject ASSET_VERSION (git SHA or timestamp) into index.html so CSS/JS
 // cache-buster query strings update automatically on every deploy.
+// {{TENANT_*}} tokens are replaced per-request by renderHtml().
 const ASSET_VERSION = process.env.ASSET_VERSION || Date.now().toString();
 const fs = require('fs');
-let indexHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-indexHtml = indexHtml
+let indexHtmlTemplate = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+indexHtmlTemplate = indexHtmlTemplate
   .replace(/href="styles\.css(\?[^"]*)?"/g, `href="styles.css?v=${ASSET_VERSION}"`)
-  .replace(/src="script\.js(\?[^"]*)?"/g, `src="script.js?v=${ASSET_VERSION}"`)
+  .replace(/src="script\.js(\?[^"]*)?"/g,   `src="script.js?v=${ASSET_VERSION}"`)
   .replace(/src="analytics\.js(\?[^"]*)?"/g, `src="analytics.js?v=${ASSET_VERSION}"`);
+
+function renderHtml(tenant) {
+  let html = indexHtmlTemplate
+    .replace(/\{\{TENANT_BRAND_NAME\}\}/g, tenant.brandName)
+    .replace(/\{\{TENANT_TAGLINE\}\}/g,    tenant.tagline)
+    .replace(/\{\{TENANT_GA4_ID\}\}/g,     tenant.ga4Id || '');
+  // Strip the gtag loader script entirely when no GA4 ID is configured
+  if (!tenant.ga4Id) {
+    html = html.replace(/<script[^>]*googletagmanager\.com[^>]*><\/script>\n?/g, '');
+  }
+  return html;
+}
+
+loadTenants();
 
 // Routes
 app.get('/', (req, res) => {
+  const tenant = resolveTenant(req.hostname);
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Content-Type', 'text/html');
-  res.send(indexHtml);
+  res.send(renderHtml(tenant));
 });
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
+    const tenant = resolveTenant(req.hostname);
     let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
           referralFirstName, referralLastName, referralPhone } = req.body;
 
@@ -124,14 +185,15 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     const emailResult = await emailService.sendConsultationRequest({
       name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
       referralFirstName, referralLastName, referralPhone
-    });
+    }, tenant);
 
     if (emailResult.success) {
       // Save to database — non-blocking. A DB failure logs but never fails the response.
       dbService.saveSubmission({
         name, email, phone, address, city, state, zip,
         preferredDate, preferredTime, preferredContact, message,
-        referralFirstName, referralLastName, referralPhone
+        referralFirstName, referralLastName, referralPhone,
+        tenantId: tenant.id
       }).catch(err => console.error('DB save failed:', err.message));
 
       res.json({ 

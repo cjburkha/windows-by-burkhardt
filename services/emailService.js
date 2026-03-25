@@ -3,7 +3,7 @@ const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 /**
  * Send consultation request email via AWS SES
  */
-async function sendConsultationRequest(formData) {
+async function sendConsultationRequest(formData, tenant) {
   // Create the SES client here (not at module load) so it always
   // reads the current env vars — avoids stale/undefined credentials
   // when the module is first loaded before dotenv has run.
@@ -61,7 +61,7 @@ Name: ${[referralFirstName, referralLastName].filter(Boolean).join(' ')}
 Phone: ${referralPhone || 'Not provided'}
 ` : ''}
 ---
-This consultation request was submitted via Windows by Burkhardt website.
+This consultation request was submitted via ${tenant.brandName} website.
 Co-branded with Apex Energy Group.
   `;
 
@@ -73,9 +73,9 @@ Co-branded with Apex Energy Group.
   }
 
   const params = {
-    Source: process.env.AWS_SES_FROM_EMAIL,
+    Source: tenant.fromEmail,
     Destination: {
-      ToAddresses: [process.env.RECIPIENT_EMAIL || 'chris.burkhardt@live.com']
+      ToAddresses: [tenant.recipientEmail]
     },
     ReplyToAddresses: [email], // safe — only used as reply-to, not injected into headers
     Message: {
@@ -121,7 +121,7 @@ Co-branded with Apex Energy Group.
                 
                 <hr style="margin-top: 30px; border: none; border-top: 1px solid #ddd;"/>
                 <p style="font-size: 12px; color: #666;">
-                  This consultation request was submitted via Windows by Burkhardt website.<br/>
+                  This consultation request was submitted via ${tenant.brandName} website.<br/>
                   Co-branded with Apex Energy Group.
                 </p>
               </body>
