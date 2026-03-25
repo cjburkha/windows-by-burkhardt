@@ -16,6 +16,8 @@
     "db:create:dev": "bash scripts/create-rds.sh dev",
     "db:create:prod": "bash scripts/create-rds.sh prod",
     "setup:dev": "bash scripts/setup-dev.sh",
+    "deploy:watch": "gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') && gh run view $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --log-failed 2>&1 | tail -100",
+    "deploy:log": "gh run view $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --log-failed 2>&1 | tail -150",
     "prepare": "node scripts/install-hooks.js"
   },
   "keywords": [

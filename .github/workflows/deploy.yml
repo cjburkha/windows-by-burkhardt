@@ -69,16 +69,27 @@ jobs:
           --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ steps.build-image.outputs.image }}\",\"ImageConfiguration\":{\"Port\":\"3000\",\"RuntimeEnvironmentVariables\":{\"NODE_ENV\":\"production\",\"ASSET_VERSION\":\"${{ github.sha }}\",\"AWS_REGION\":\"${{ env.AWS_REGION }}\",\"AWS_ACCESS_KEY_ID\":\"${{ secrets.AWS_SES_ACCESS_KEY_ID }}\",\"AWS_SECRET_ACCESS_KEY\":\"${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}\",\"AWS_SES_FROM_EMAIL\":\"${{ secrets.AWS_SES_FROM_EMAIL }}\",\"RECIPIENT_EMAIL\":\"${{ secrets.RECIPIENT_EMAIL }}\",\"DATABASE_URL\":\"${{ secrets.DATABASE_URL }}\"}},\"ImageRepositoryType\":\"ECR\"}}" \
           --region ${{ env.AWS_REGION }}
 
-    - name: Wait for deployment
+    - name: Wait for App Runner deployment
+      # 'aws apprunner wait' is not a supported subcommand — poll manually.
+      # Checks every 15s for up to 10 minutes (40 attempts).
       run: |
-        echo "Waiting for App Runner service to update..."
-        aws apprunner wait service-running \
-          --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
-          --region ${{ env.AWS_REGION }} || true
-
-    - name: Deployment complete
-      run: |
-        echo "API deployment complete!"
+        echo "Waiting for App Runner service to reach RUNNING state..."
+        for i in $(seq 1 40); do
+          STATUS=$(aws apprunner describe-service \
+            --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Service.Status' --output text)
+          echo "  attempt $i/40 — status: $STATUS"
+          if [ "$STATUS" = "RUNNING" ]; then
+            echo "Service is RUNNING — deployment complete."
+            break
+          fi
+          if [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "DELETE_FAILED" ]; then
+            echo "Service entered failed state: $STATUS"
+            exit 1
+          fi
+          sleep 15
+        done
         echo "Service URL: https://${{ secrets.APP_RUNNER_DOMAIN }}"
 
   # ── Smoke tests ──────────────────────────────────────────────────────────────
