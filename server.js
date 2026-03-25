@@ -36,7 +36,7 @@ const FALLBACK_TENANTS = {
   'windowsbyjose.com': {
     id:             'jose',
     domain:         'windowsbyjose.com',
-    brandName:      'Windows by Jose',
+    brandName:      'Windows by Osej',
     headline:       'Work with the best,<br>work with Jose.',
     favicon:        '/favicon-jose.svg',
     fromEmail:      'noreply@windowsbyjose.com',
