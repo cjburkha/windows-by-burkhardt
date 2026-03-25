@@ -25,6 +25,7 @@ jobs:
         filters: |
           frontend:
             - 'public/**'
+            - '!public/index.html'
           backend:
             - 'server.js'
             - 'services/**'
@@ -32,6 +33,7 @@ jobs:
             - 'prisma.config.ts'
             - 'Dockerfile'
             - 'package*.json'
+            - 'public/index.html'
 
   # ── Frontend path: S3 sync + CloudFront invalidation (~15 seconds) ──────────
   deploy-frontend:
@@ -49,26 +51,24 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Sync CSS/JS assets (long cache — CloudFront invalidation refreshes)
+    - name: Sync CSS/JS/assets (long cache — CloudFront invalidation refreshes CDN)
+      # index.html is excluded: it contains {{TENANT_*}} tokens and is rendered
+      # server-side by App Runner, never served directly from S3.
       run: |
         aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
           --delete \
           --exclude "*.html" \
           --cache-control "public,max-age=86400"
 
-    - name: Sync HTML (always revalidate)
+    - name: Invalidate CloudFront cache (both tenant distributions)
       run: |
-        aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
-          --exclude "*" --include "*.html" \
-          --cache-control "no-cache,no-store,must-revalidate"
-
-    - name: Invalidate CloudFront cache
-      run: |
-        INVALIDATION_ID=$(aws cloudfront create-invalidation \
-          --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-          --paths "/*" \
-          --query "Invalidation.Id" --output text)
-        echo "Invalidation ID: $INVALIDATION_ID"
+        for DIST_ID in ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_JOSE }}; do
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id $DIST_ID \
+            --paths "/" "/styles.css*" "/script.js*" "/analytics.js*" "/*.svg" "/*.ico" \
+            --query "Invalidation.Id" --output text)
+          echo "Invalidation $INVALIDATION_ID for $DIST_ID"
+        done
         echo "Static assets live at: https://${{ secrets.APP_RUNNER_DOMAIN }}"
 
   # ── Backend path: Docker build → ECR push → App Runner deploy (~5 minutes) ──
