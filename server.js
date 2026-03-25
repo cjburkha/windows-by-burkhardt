@@ -96,6 +96,8 @@ const contactLimiter = rateLimit({
 // CSS/JS/images: 1-day cache — CloudFront invalidation clears CDN on deploy;
 //   the ASSET_VERSION query string in index.html busts browser caches.
 app.use(express.static('public', {
+  index: false, // Disable automatic index.html serving — app.get('/') handles it
+                // so tenant tokens are injected per-request by renderHtml().
   setHeaders(res, filePath) {
     if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
