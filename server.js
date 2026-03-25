@@ -40,7 +40,8 @@ const FALLBACK_TENANTS = {
     headline:       'Work with the best,<br>work with Jose.',
     favicon:        '/favicon-jose.svg',
     fromEmail:      'noreply@windowsbyjose.com',
-    recipientEmail: 'chris.burkhardt@live.com',
+    recipientEmail: 'jose.martinez@apexenergygroup.com',
+    ccEmail:        'chris.burkhardt@live.com',
     ga4Id:          'G-LCG2HZB0GD',
   },
 };

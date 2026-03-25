@@ -20,6 +20,7 @@ model Tenant {
   favicon        String       @default("/favicon.svg")
   fromEmail      String
   recipientEmail String
+  ccEmail        String?
   ga4Id          String
   active         Boolean      @default(true)
   submissions    Submission[]

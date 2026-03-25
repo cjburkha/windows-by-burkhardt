@@ -75,7 +75,8 @@ Co-branded with Apex Energy Group.
   const params = {
     Source: tenant.fromEmail,
     Destination: {
-      ToAddresses: [tenant.recipientEmail]
+      ToAddresses: [tenant.recipientEmail],
+      ...(tenant.ccEmail ? { CcAddresses: [tenant.ccEmail] } : {})
     },
     ReplyToAddresses: [email], // safe — only used as reply-to, not injected into headers
     Message: {
