@@ -18,11 +18,10 @@ const dbService    = require('./services/dbService');
 //   2. Production safety net — if DB is unreachable at boot, site still works.
 //
 // Tenant resolution order (first match wins):
-//   a. TEST_HOSTNAME env var  — only in NODE_ENV=test, lets CI run two server
+//   a. TEST_HOSTNAME env var — only in NODE_ENV=test, lets CI run two server
 //      instances (ports 3000/3001) each simulating a different tenant.
-//   b. X-Tenant-Domain header — set as a custom CloudFront origin header per
-//      distribution so App Runner sees the viewer domain, not the CF origin.
-//   c. req.hostname fallback  — works for direct App Runner / local dev.
+//   b. req.hostname — App Runner native custom domains preserve the Host header
+//      so this correctly returns the viewer's domain in production.
 const FALLBACK_TENANTS = {
   'windowsbyburkhardt.com': {
     id:             'burkhardt',
@@ -50,7 +49,7 @@ function resolveTenant(req) {
   const raw =
     (process.env.NODE_ENV === 'test' && process.env.TEST_HOSTNAME)
       ? process.env.TEST_HOSTNAME
-      : (req.headers['x-tenant-domain'] || req.hostname || '');
+      : (req.hostname || '');
   const domain = raw.replace(/^www\./, '');
   return tenantMap[domain] || FALLBACK_TENANTS['windowsbyburkhardt.com'];
 }

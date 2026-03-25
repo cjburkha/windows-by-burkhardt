@@ -11,71 +11,11 @@ env:
   CONTAINER_NAME: windows-by-burkhardt
 
 jobs:
-  # ── Detect which parts of the repo changed ──────────────────────────────────
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      backend:  ${{ steps.filter.outputs.backend }}
-    steps:
-    - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: |
-          frontend:
-            - 'public/**'
-            - '!public/index.html'
-          backend:
-            - 'server.js'
-            - 'services/**'
-            - 'prisma/**'
-            - 'prisma.config.ts'
-            - 'Dockerfile'
-            - 'package*.json'
-            - 'public/index.html'
-
-  # ── Frontend path: S3 sync + CloudFront invalidation (~15 seconds) ──────────
-  deploy-frontend:
-    name: Deploy static assets (S3 + CloudFront)
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Sync CSS/JS/assets (long cache — CloudFront invalidation refreshes CDN)
-      # index.html is excluded: it contains {{TENANT_*}} tokens and is rendered
-      # server-side by App Runner, never served directly from S3.
-      run: |
-        aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
-          --delete \
-          --exclude "*.html" \
-          --cache-control "public,max-age=86400"
-
-    - name: Invalidate CloudFront cache (both tenant distributions)
-      run: |
-        for DIST_ID in ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_JOSE }}; do
-          INVALIDATION_ID=$(aws cloudfront create-invalidation \
-            --distribution-id $DIST_ID \
-            --paths "/" "/styles.css*" "/script.js*" "/analytics.js*" "/*.svg" "/*.ico" \
-            --query "Invalidation.Id" --output text)
-          echo "Invalidation $INVALIDATION_ID for $DIST_ID"
-        done
-        echo "Static assets live at: https://${{ secrets.APP_RUNNER_DOMAIN }}"
-
-  # ── Backend path: Docker build → ECR push → App Runner deploy (~5 minutes) ──
-  deploy-backend:
-    name: Build & deploy API (Docker + App Runner)
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
+  # ── Deploy: Docker build → ECR push → App Runner update (~5 minutes) ────────
+  # Static assets (CSS/JS) are baked into the Docker image and served by Express.
+  # App Runner native custom domains handle TLS — no CloudFront needed.
+  deploy:
+    name: Build & deploy (Docker + App Runner)
     runs-on: ubuntu-latest
 
     steps:
@@ -144,13 +84,8 @@ jobs:
   # ── Smoke tests ──────────────────────────────────────────────────────────────
   smoke-test:
     name: Smoke tests (prod)
-    needs: [changes, deploy-frontend, deploy-backend]
-    # Run when at least one deploy job ran and none failed.
-    # 'skipped' is OK (means that deploy path wasn't needed).
-    if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled')
+    needs: deploy
+    if: success()
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -172,27 +107,10 @@ jobs:
       run: npx prisma generate
 
     - name: Run smoke tests
-      # BASE_URL points to the Burkhardt CloudFront domain (APP_RUNNER_DOMAIN secret).
-      # JOSE_BASE_URL points to the Jose CloudFront domain — enables the "jose"
-      # Playwright project which runs tenants.spec.ts against windowsbyjose.com.
-      #
-      # navigator.webdriver is true in all Playwright sessions, so analytics.js
-      # automatically sends smoke test traffic to GA4 DebugView only —
-      # excluded from standard reports without any URL changes needed.
-      #
-      # Test strategy:
-      #   Backend changed → full suite (all tests, includes real SES send + DB write).
-      #   Frontend-only   → UI-only tests; skips "no mock" + DB tests to avoid
-      #                     spurious emails for every HTML/CSS tweak.
+      # BASE_URL / JOSE_BASE_URL point to the App Runner custom domains via Route 53.
+      # navigator.webdriver is true in Playwright so analytics.js auto-routes
+      # smoke traffic to GA4 DebugView — excluded from standard reports.
       env:
         BASE_URL:      https://${{ secrets.APP_RUNNER_DOMAIN }}
         JOSE_BASE_URL: https://windowsbyjose.com
-        BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
-      run: |
-        if [ "$BACKEND_CHANGED" = "true" ]; then
-          echo "Backend changed — running full test suite (includes SES + DB tests)"
-          npm test
-        else
-          echo "Frontend-only change — running UI tests (skipping real-API tests)"
-          npx playwright test --grep-invert "no mock|Database persistence"
-        fi
+      run: npm test
