@@ -58,8 +58,17 @@ async function loadTenants() {
   try {
     const tenants = await dbService.getActiveTenants();
     if (tenants.length === 0) return; // no DB — keep fallback map
-    const map = { ...FALLBACK_TENANTS }; // start from fallback so both tenants exist
-    for (const t of tenants) map[t.domain] = t; // DB values override fallbacks
+    const map = { ...FALLBACK_TENANTS }; // start from fallback so both tenants always exist
+    for (const t of tenants) {
+      const fallback = FALLBACK_TENANTS[t.domain] || {};
+      // Merge field-by-field: DB value wins unless it is null/empty string,
+      // in which case the hardcoded fallback is kept as a safety net.
+      map[t.domain] = Object.fromEntries(
+        Object.entries({ ...fallback, ...t }).map(([k, v]) =>
+          [k, (v !== null && v !== '') ? v : fallback[k]]
+        )
+      );
+    }
     tenantMap = map;
     console.log(`Loaded ${tenants.length} tenant(s): ${Object.keys(map).join(', ')}`);
   } catch (err) {

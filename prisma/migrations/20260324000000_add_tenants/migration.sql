@@ -37,7 +37,7 @@ VALUES
     'Work with the best, work with Jose.',
     'noreply@windowsbyjose.com',
     'chris.burkhardt@live.com',
-    ''
+    'G-LCG2HZB0GD'
   );
 
 -- Add tenantId to Submission (existing rows get default 'burkhardt')

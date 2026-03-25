@@ -25,7 +25,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  // In CI: 'never' — no browser to open. Locally: 'on-failure' so the report
+  // opens automatically and the URL is printed to the terminal on test failures.
+  reporter: [['list'], ['html', { open: process.env.CI ? 'never' : 'on-failure' }]],
   use: {
     trace: 'on-first-retry',
   },
