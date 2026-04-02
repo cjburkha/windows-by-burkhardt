@@ -145,6 +145,79 @@ Co-branded with Apex Energy Group.
   }
 }
 
+/**
+ * Send a confirmation email to the customer after they submit the form.
+ * Fire-and-forget — a failure here never blocks the submission response.
+ */
+async function sendConfirmation(formData, tenant) {
+  if (process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true') {
+    return { success: true, messageId: 'test-mock-confirmation-id' };
+  }
+
+  const sesClient = new SESClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.AWS_SES_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.AWS_SES_SECRET_ACCESS_KEY
+    }
+  });
+
+  const { name, email, preferredDate, preferredTime } = formData;
+  const firstName = name.split(' ')[0];
+
+  const scheduleNote = preferredDate
+    ? `You mentioned ${preferredDate}${preferredTime ? ` in the ${preferredTime.toLowerCase()}` : ''} as your preference — we'll do our best to accommodate that.`
+    : `We'll reach out shortly to find a time that works for you.`;
+
+  const textBody = `Hi ${firstName},
+
+Thank you for reaching out to ${tenant.brandName}! We received your consultation request and will be in touch soon.
+
+${scheduleNote}
+
+If you have any questions in the meantime, just reply to this email.
+
+— The ${tenant.brandName} Team
+Co-branded with Apex Energy Group
+`;
+
+  const htmlBody = `
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2c5282;">We got your request, ${firstName}!</h2>
+        <p>Thank you for reaching out to <strong>${tenant.brandName}</strong>. We received your consultation request and will be in touch soon.</p>
+        <p>${scheduleNote}</p>
+        <p>If you have any questions in the meantime, just reply to this email.</p>
+        <br/>
+        <p style="margin: 0;">— The ${tenant.brandName} Team</p>
+        <p style="margin: 0; font-size: 12px; color: #666;">Co-branded with Apex Energy Group</p>
+      </body>
+    </html>
+  `;
+
+  try {
+    const command = new SendEmailCommand({
+      Source: tenant.fromEmail,
+      Destination: { ToAddresses: [email] },
+      ReplyToAddresses: [tenant.recipientEmail],
+      Message: {
+        Subject: { Data: `We received your request — ${tenant.brandName}`, Charset: 'UTF-8' },
+        Body: {
+          Text: { Data: textBody, Charset: 'UTF-8' },
+          Html: { Data: htmlBody, Charset: 'UTF-8' }
+        }
+      }
+    });
+    const response = await sesClient.send(command);
+    console.log('Confirmation email sent:', response.MessageId);
+    return { success: true, messageId: response.MessageId };
+  } catch (error) {
+    console.error('Confirmation email failed:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
-  sendConsultationRequest
+  sendConsultationRequest,
+  sendConfirmation
 };

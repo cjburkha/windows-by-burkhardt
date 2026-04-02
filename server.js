@@ -248,6 +248,11 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     }, tenant);
 
     if (emailResult.success) {
+      // Send confirmation to customer — non-blocking, never fails the response.
+      emailService.sendConfirmation({
+        name, email, preferredDate, preferredTime
+      }, tenant).catch(err => console.error('Confirmation email failed:', err.message));
+
       // Save to database — non-blocking. A DB failure logs but never fails the response.
       dbService.saveSubmission({
         name, email, phone, address, city, state, zip,
