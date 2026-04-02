@@ -79,6 +79,10 @@
             </div>
 
             <form id="consultationForm" class="consultation-form">
+                <!-- Honeypot: hidden from real users, bots fill it in -->
+                <div class="hp-field" aria-hidden="true">
+                    <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+                </div>
                 <div id="formStep1">
                 <div class="field">
                     <input type="text" id="name" name="name" placeholder="Full Name *" required>

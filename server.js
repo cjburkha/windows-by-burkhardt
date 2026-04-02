@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
+const geoip  = require('geoip-lite');
 const cors = require('cors');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
@@ -187,6 +188,21 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     const tenant = resolveTenant(req);
     let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
           referralFirstName, referralLastName, referralPhone } = req.body;
+
+    // Honeypot — bots fill hidden fields, humans never see them
+    if (req.body.website) {
+      // Silently accept so the bot thinks it worked
+      return res.json({ success: true });
+    }
+
+    // Geo-block — this is a local Wisconsin business; reject non-US submissions
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip;
+    const geo = geoip.lookup(ip);
+    if (geo && geo.country !== 'US') {
+      console.warn(`Blocked non-US submission from ${ip} (${geo.country})`);
+      return res.status(403).json({ success: false, message: 'Service not available in your region.' });
+    }
 
     // Validate required fields
     if (!name || !email || !phone) {
