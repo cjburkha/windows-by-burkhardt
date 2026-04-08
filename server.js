@@ -283,6 +283,29 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
+
+// ── Email open tracking pixel ─────────────────────────────────────────────────
+const PIXEL = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+
+function fireOpenEvent(campaignId, sendId) {
+  const apiSecret = process.env.GA4_API_SECRET;
+  if (!apiSecret) return;
+  fetch(`https://www.google-analytics.com/mp/collect?measurement_id=G-2CC9WZ2Q8V&api_secret=${apiSecret}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: `email-${sendId}`,
+      events: [{ name: 'email_open', params: { campaign_id: campaignId, send_id: String(sendId) } }]
+    })
+  }).catch(err => console.error('GA4 open event failed:', err.message));
+}
+
+app.get('/t/o/:campaignId/:sendId', (req, res) => {
+  res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store, no-cache, must-revalidate', 'Pragma': 'no-cache' });
+  res.send(PIXEL);
+  fireOpenEvent(req.params.campaignId, req.params.sendId);
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
