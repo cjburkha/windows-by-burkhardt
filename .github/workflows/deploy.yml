@@ -176,16 +176,21 @@ jobs:
     - name: Generate Prisma client
       run: npx prisma generate
 
-    - name: Run smoke tests
-      # BASE_URL points to the App Runner custom domain for windowsbyburkhardt.com.
-      # JOSE_BASE_URL is intentionally omitted — running against windowsbyjose.com
-      # would send real SES emails on every deploy. Jose tenant branding is covered
-      # by the two-server CI test (NODE_ENV=test, no real emails sent).
-      # navigator.webdriver is true in Playwright so analytics.js auto-routes
-      # smoke traffic to GA4 DebugView — excluded from standard reports.
+    - name: Smoke tests — burkhardt (full suite)
+      # Runs all tests including email generation against the real production server.
+      # navigator.webdriver=true auto-routes GA4 events to DebugView.
       env:
         BASE_URL: https://${{ secrets.APP_RUNNER_DOMAIN }}
-      run: npm test
+      run: npx playwright test --project=burkhardt
+
+    - name: Smoke tests — jose (branding only, email tests skipped)
+      # JOSE_BASE_URL re-enabled here — but tests tagged "(no mock)" are excluded
+      # via --grep-invert so no real SES emails are sent to jose.martinez.
+      # Tenant branding (title, headline, favicon, GA4 ID) is still verified.
+      env:
+        BASE_URL:      https://${{ secrets.APP_RUNNER_DOMAIN }}
+        JOSE_BASE_URL: https://windowsbyjose.com
+      run: npx playwright test --project=jose --grep-invert "no mock"
 
     - name: Upload Playwright report
       if: always()
