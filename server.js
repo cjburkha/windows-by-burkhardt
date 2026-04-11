@@ -287,7 +287,35 @@ app.get('/health', (req, res) => {
 // ── Email open tracking pixel ─────────────────────────────────────────────────
 const PIXEL = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
+// Separate pool for the apex campaigns DB (different database from wbb).
+// Created lazily so a missing APEX_DATABASE_URL doesn't crash the server.
+let _apexPool = null;
+function getApexPool() {
+  if (!_apexPool && process.env.APEX_DATABASE_URL) {
+    const { Pool } = require('pg');
+    _apexPool = new Pool({
+      connectionString: process.env.APEX_DATABASE_URL.replace(/[?&]sslmode=[^&]*/g, ''),
+      ssl: { rejectUnauthorized: false },
+      max: 3,
+    });
+  }
+  return _apexPool;
+}
+
+function recordOpen(campaignId, sendId) {
+  const pool = getApexPool();
+  if (!pool) return;
+  pool.query(
+    'UPDATE campaign_sends SET opened_at = NOW() WHERE id = $1 AND campaign_id = $2 AND opened_at IS NULL',
+    [sendId, campaignId]
+  ).catch(err => console.error('apex DB open record failed:', err.message));
+}
+
 function fireOpenEvent(campaignId, sendId) {
+  // Always record in the apex DB (if configured)
+  recordOpen(campaignId, sendId);
+
+  // Also fire GA4 Measurement Protocol event (optional — needs GA4_API_SECRET)
   const apiSecret = process.env.GA4_API_SECRET;
   if (!apiSecret) return;
   fetch(`https://www.google-analytics.com/mp/collect?measurement_id=G-2CC9WZ2Q8V&api_secret=${apiSecret}`, {
