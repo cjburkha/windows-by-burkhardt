@@ -177,12 +177,14 @@ jobs:
       run: npx prisma generate
 
     - name: Run smoke tests
-      # BASE_URL / JOSE_BASE_URL point to the App Runner custom domains via Route 53.
+      # BASE_URL points to the App Runner custom domain for windowsbyburkhardt.com.
+      # JOSE_BASE_URL is intentionally omitted — running against windowsbyjose.com
+      # would send real SES emails on every deploy. Jose tenant branding is covered
+      # by the two-server CI test (NODE_ENV=test, no real emails sent).
       # navigator.webdriver is true in Playwright so analytics.js auto-routes
       # smoke traffic to GA4 DebugView — excluded from standard reports.
       env:
-        BASE_URL:      https://${{ secrets.APP_RUNNER_DOMAIN }}
-        JOSE_BASE_URL: https://windowsbyjose.com
+        BASE_URL: https://${{ secrets.APP_RUNNER_DOMAIN }}
       run: npm test
 
     - name: Upload Playwright report
