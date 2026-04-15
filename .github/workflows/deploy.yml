@@ -117,10 +117,49 @@ jobs:
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
     - name: Deploy to AWS App Runner
+      env:
+        DB_URL:       ${{ secrets.DATABASE_URL }}
+        APEX_DB_URL:  ${{ secrets.APEX_DATABASE_URL }}
+        SES_KEY:      ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+        SES_SECRET:   ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+        SES_FROM:     ${{ secrets.AWS_SES_FROM_EMAIL }}
+        RECIPIENT:    ${{ secrets.RECIPIENT_EMAIL }}
       run: |
+        # Use jq to build the JSON so special characters in secrets are safely escaped
+        CONFIG=$(jq -n \
+          --arg image    "${{ steps.build-image.outputs.image }}" \
+          --arg sha      "${{ github.sha }}" \
+          --arg region   "${{ env.AWS_REGION }}" \
+          --arg ses_key  "$SES_KEY" \
+          --arg ses_sec  "$SES_SECRET" \
+          --arg ses_from "$SES_FROM" \
+          --arg recip    "$RECIPIENT" \
+          --arg db_url   "$DB_URL" \
+          --arg apex_db  "$APEX_DB_URL" \
+          '{
+            ImageRepository: {
+              ImageIdentifier: $image,
+              ImageConfiguration: {
+                Port: "3000",
+                RuntimeEnvironmentVariables: {
+                  NODE_ENV:          "production",
+                  ASSET_VERSION:     $sha,
+                  ASSET_BASE_URL:    "https://wbb-static-prod.s3.us-east-1.amazonaws.com",
+                  AWS_REGION:        $region,
+                  AWS_ACCESS_KEY_ID: $ses_key,
+                  AWS_SECRET_ACCESS_KEY: $ses_sec,
+                  AWS_SES_FROM_EMAIL: $ses_from,
+                  RECIPIENT_EMAIL:   $recip,
+                  DATABASE_URL:      $db_url,
+                  APEX_DATABASE_URL: $apex_db
+                }
+              },
+              ImageRepositoryType: "ECR"
+            }
+          }')
         aws apprunner update-service \
           --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
-          --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ steps.build-image.outputs.image }}\",\"ImageConfiguration\":{\"Port\":\"3000\",\"RuntimeEnvironmentVariables\":{\"NODE_ENV\":\"production\",\"ASSET_VERSION\":\"${{ github.sha }}\",\"ASSET_BASE_URL\":\"https://wbb-static-prod.s3.us-east-1.amazonaws.com\",\"AWS_REGION\":\"${{ env.AWS_REGION }}\",\"AWS_ACCESS_KEY_ID\":\"${{ secrets.AWS_SES_ACCESS_KEY_ID }}\",\"AWS_SECRET_ACCESS_KEY\":\"${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}\",\"AWS_SES_FROM_EMAIL\":\"${{ secrets.AWS_SES_FROM_EMAIL }}\",\"RECIPIENT_EMAIL\":\"${{ secrets.RECIPIENT_EMAIL }}\",\"DATABASE_URL\":\"${{ secrets.DATABASE_URL }}\",\"APEX_DATABASE_URL\":\"${{ secrets.APEX_DATABASE_URL }}\"}},\"ImageRepositoryType\":\"ECR\"}}" \
+          --source-configuration "$CONFIG" \
           --region ${{ env.AWS_REGION }}
 
     - name: Wait for App Runner deployment
@@ -176,21 +215,14 @@ jobs:
     - name: Generate Prisma client
       run: npx prisma generate
 
-    - name: Smoke tests — burkhardt (full suite)
-      # Runs all tests including email generation against the real production server.
-      # navigator.webdriver=true auto-routes GA4 events to DebugView.
-      env:
-        BASE_URL: https://${{ secrets.APP_RUNNER_DOMAIN }}
-      run: npx playwright test --project=burkhardt
-
-    - name: Smoke tests — jose (branding only, email tests skipped)
-      # JOSE_BASE_URL re-enabled here — but tests tagged "(no mock)" are excluded
-      # via --grep-invert so no real SES emails are sent to jose.martinez.
-      # Tenant branding (title, headline, favicon, GA4 ID) is still verified.
+    - name: Run smoke tests
+      # BASE_URL / JOSE_BASE_URL point to the App Runner custom domains via Route 53.
+      # navigator.webdriver is true in Playwright so analytics.js auto-routes
+      # smoke traffic to GA4 DebugView — excluded from standard reports.
       env:
         BASE_URL:      https://${{ secrets.APP_RUNNER_DOMAIN }}
         JOSE_BASE_URL: https://windowsbyjose.com
-      run: npx playwright test --project=jose --grep-invert "no mock"
+      run: npm test
 
     - name: Upload Playwright report
       if: always()
