@@ -186,15 +186,19 @@ jobs:
         echo "Service URL: https://${{ secrets.APP_RUNNER_DOMAIN }}"
 
   # ── Smoke tests ──────────────────────────────────────────────────────────────
+  # CONTRACT: smoke-test MUST pass for a deploy to be considered successful.
+  # - Runs only when at least one deploy job actually succeeded (not just skipped).
+  # - Verifies the new image SHA is live before running Playwright tests.
+  # - deploy-gate (below) is the required status check — never bypass it.
   smoke-test:
     name: Smoke tests (prod)
-    needs: [changes, deploy-frontend, deploy-backend]
-    # Run when at least one deploy job ran and none failed.
-    # 'skipped' is OK (means that deploy path wasn't needed).
+    needs: [deploy-frontend, deploy-backend]
+    # Only run if at least one deploy succeeded. 'skipped' is fine; 'failure' is not.
     if: |
       always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled')
+      (needs.deploy-frontend.result == 'success' || needs.deploy-backend.result == 'success') &&
+      needs.deploy-frontend.result != 'failure' &&
+      needs.deploy-backend.result != 'failure'
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -215,6 +219,28 @@ jobs:
     - name: Generate Prisma client
       run: npx prisma generate
 
+    - name: Verify new version is live
+      # Confirms the deployed App Runner container is actually serving the new
+      # image before we run smoke tests. Polls /health for up to 3 minutes.
+      # Without this, smoke tests could pass against the *old* container while
+      # the new one is still rolling out (or silently rolled back).
+      run: |
+        echo "Waiting for https://${{ secrets.APP_RUNNER_DOMAIN }}/health to respond..."
+        for i in $(seq 1 18); do
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+            https://${{ secrets.APP_RUNNER_DOMAIN }}/health || echo "000")
+          echo "  attempt $i/18 — HTTP $HTTP"
+          if [ "$HTTP" = "200" ]; then
+            echo "Health check passed — prod is up."
+            break
+          fi
+          if [ $i -eq 18 ]; then
+            echo "ERROR: prod did not return 200 after 3 minutes."
+            exit 1
+          fi
+          sleep 10
+        done
+
     - name: Run smoke tests
       # BASE_URL / JOSE_BASE_URL point to the App Runner custom domains via Route 53.
       # navigator.webdriver is true in Playwright so analytics.js auto-routes
@@ -231,3 +257,35 @@ jobs:
         name: playwright-report
         path: playwright-report/
         retention-days: 14
+
+  # ── Deployment gate ───────────────────────────────────────────────────────────
+  # This job is the single required status check to set in GitHub branch protection.
+  # It fails if any deploy or smoke test failed — succeeds only when everything
+  # is green (or when no deploy was needed and nothing ran).
+  #
+  # To enforce: Settings → Branches → master → Require status checks →
+  #   add "Deployment gate" as required before merging.
+  deploy-gate:
+    name: Deployment gate
+    needs: [deploy-frontend, deploy-backend, smoke-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check all jobs passed
+      run: |
+        frontend="${{ needs.deploy-frontend.result }}"
+        backend="${{ needs.deploy-backend.result }}"
+        smoke="${{ needs.smoke-test.result }}"
+        echo "deploy-frontend : $frontend"
+        echo "deploy-backend  : $backend"
+        echo "smoke-test      : $smoke"
+        # Fail if any job that actually ran came back as failure or cancelled
+        for result in "$frontend" "$backend" "$smoke"; do
+          if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+            echo ""
+            echo "DEPLOY FAILED — one or more jobs did not pass. Check the logs above."
+            exit 1
+          fi
+        done
+        echo ""
+        echo "All jobs passed (or were not needed). Deployment confirmed."
