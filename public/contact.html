@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact &mdash; {{TENANT_BRAND_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Merriweather+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{{TENANT_FAVICON}}">
+    <meta name="wbb-ga4-id" content="{{TENANT_GA4_ID}}">
+    <link rel="stylesheet" href="styles.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{TENANT_GA4_ID}}"></script>
+    <script src="analytics.js"></script>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <div class="brand-primary">
+                <a href="/" class="brand-name">{{TENANT_BRAND_NAME}}</a>
+                <span class="brand-divider"></span>
+                <span class="brand-sub">An <strong>Apex Energy Group</strong> Partner</span>
+            </div>
+            <nav id="mainNav">
+                <div class="nav-links" id="navLinks">
+                    <a href="/reviews" class="nav-link">Reviews</a>
+                    <a href="/gallery" class="nav-link">Gallery</a>
+                    <a href="/contact" class="nav-link nav-link-active">Contact</a>
+                </div>
+                <a href="/#schedule" class="nav-cta">Schedule Now</a>
+                <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-main">
+
+        <div class="page-hero">
+            <p class="hero-eyebrow">Get in Touch</p>
+            <h1>We&#8217;d Love to<br><em>Hear From You</em></h1>
+            <p class="page-hero-sub">The easiest way to get started is to schedule a free in-home consultation. We&#8217;ll come to you, answer every question, and never pressure you.</p>
+        </div>
+
+        <section class="contact-section">
+            <div class="contact-inner">
+
+                <div class="contact-card">
+                    <h2>Service Area</h2>
+                    <p>We serve homeowners throughout the greater Milwaukee, Wisconsin area, including surrounding counties.</p>
+                </div>
+
+                <div class="contact-card">
+                    <h2>Email</h2>
+                    <p><a href="mailto:{{TENANT_RECIPIENT_EMAIL}}">{{TENANT_RECIPIENT_EMAIL}}</a></p>
+                    <p>We typically respond within one business day.</p>
+                </div>
+
+                <div class="contact-card">
+                    <h2>Hours</h2>
+                    <p>Monday &ndash; Friday: 8am &ndash; 6pm</p>
+                    <p>Saturday: 9am &ndash; 3pm</p>
+                    <p>Sunday: Closed</p>
+                </div>
+
+                <div class="contact-cta-card">
+                    <p>The fastest way to reach us is to schedule your free consultation.</p>
+                    <a href="/#schedule" class="btn-outline">Schedule Now &mdash; It&#8217;s Free</a>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <p class="footer-name">{{TENANT_BRAND_NAME}}</p>
+                <p class="footer-partner">An Apex Energy Group Authorized Partner</p>
+            </div>
+            <div class="footer-links">
+                <a href="/#schedule">Schedule Consultation</a>
+                <a href="/reviews">Reviews</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="https://www.apexenergygroup.com" target="_blank" rel="noopener">Apex Energy Group</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 {{TENANT_BRAND_NAME}}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -160,6 +160,35 @@ indexHtmlTemplate = indexHtmlTemplate
   .replace(/src="script\.js(\?[^"]*)?"/g,     `src="${pfx('script.js')}?v=${ASSET_VERSION}"`)
   .replace(/src="analytics\.js(\?[^"]*)?"/g,  `src="${pfx('analytics.js')}?v=${ASSET_VERSION}"`);
 
+// Load inner page templates (reviews, gallery, contact, privacy)
+const PAGE_NAMES = ['reviews', 'gallery', 'contact', 'privacy'];
+const pageTemplates = {};
+for (const page of PAGE_NAMES) {
+  const filePath = path.join(__dirname, 'public', `${page}.html`);
+  if (fs.existsSync(filePath)) {
+    let tmpl = fs.readFileSync(filePath, 'utf8');
+    tmpl = tmpl
+      .replace(/href="styles\.css(\?[^"]*)?"/g,   `href="${pfx('styles.css')}?v=${ASSET_VERSION}"`)
+      .replace(/src="script\.js(\?[^"]*)?"/g,     `src="${pfx('script.js')}?v=${ASSET_VERSION}"`)
+      .replace(/src="analytics\.js(\?[^"]*)?"/g,  `src="${pfx('analytics.js')}?v=${ASSET_VERSION}"`);
+    pageTemplates[page] = tmpl;
+  }
+}
+
+function renderPage(page, tenant) {
+  const tmpl = pageTemplates[page];
+  if (!tmpl) return null;
+  let html = tmpl
+    .replace(/\{\{TENANT_BRAND_NAME\}\}/g,     tenant.brandName)
+    .replace(/\{\{TENANT_FAVICON\}\}/g,         tenant.favicon || '/favicon.svg')
+    .replace(/\{\{TENANT_GA4_ID\}\}/g,          tenant.ga4Id || '')
+    .replace(/\{\{TENANT_RECIPIENT_EMAIL\}\}/g, tenant.recipientEmail || '');
+  if (!tenant.ga4Id) {
+    html = html.replace(/<script[^>]*googletagmanager\.com[^>]*><\/script>\n?/g, '');
+  }
+  return html;
+}
+
 function renderHtml(tenant) {
   let html = indexHtmlTemplate
     .replace(/\{\{TENANT_BRAND_NAME\}\}/g, tenant.brandName)
@@ -182,6 +211,18 @@ app.get('/', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(renderHtml(tenant));
 });
+
+// Inner pages — each HTML file is pre-loaded and token-replaced per request
+for (const page of PAGE_NAMES) {
+  app.get(`/${page}`, (req, res) => {
+    const tenant = resolveTenant(req);
+    const html = renderPage(page, tenant);
+    if (!html) return res.redirect('/');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  });
+}
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
@@ -281,57 +322,6 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
 // Health check endpoint for AWS
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
-});
-
-
-// ── Email open tracking pixel ─────────────────────────────────────────────────
-const PIXEL = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-
-// Separate pool for the apex campaigns DB (different database from wbb).
-// Created lazily so a missing APEX_DATABASE_URL doesn't crash the server.
-let _apexPool = null;
-function getApexPool() {
-  if (!_apexPool && process.env.APEX_DATABASE_URL) {
-    const { Pool } = require('pg');
-    _apexPool = new Pool({
-      connectionString: process.env.APEX_DATABASE_URL.replace(/[?&]sslmode=[^&]*/g, ''),
-      ssl: { rejectUnauthorized: false },
-      max: 3,
-    });
-  }
-  return _apexPool;
-}
-
-function recordOpen(campaignId, sendId) {
-  const pool = getApexPool();
-  if (!pool) return;
-  pool.query(
-    'UPDATE campaign_sends SET opened_at = NOW() WHERE id = $1 AND campaign_id = $2 AND opened_at IS NULL',
-    [sendId, campaignId]
-  ).catch(err => console.error('apex DB open record failed:', err.message));
-}
-
-function fireOpenEvent(campaignId, sendId) {
-  // Always record in the apex DB (if configured)
-  recordOpen(campaignId, sendId);
-
-  // Also fire GA4 Measurement Protocol event (optional — needs GA4_API_SECRET)
-  const apiSecret = process.env.GA4_API_SECRET;
-  if (!apiSecret) return;
-  fetch(`https://www.google-analytics.com/mp/collect?measurement_id=G-2CC9WZ2Q8V&api_secret=${apiSecret}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: `email-${sendId}`,
-      events: [{ name: 'email_open', params: { campaign_id: campaignId, send_id: String(sendId) } }]
-    })
-  }).catch(err => console.error('GA4 open event failed:', err.message));
-}
-
-app.get('/t/o/:campaignId/:sendId', (req, res) => {
-  res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store, no-cache, must-revalidate', 'Pragma': 'no-cache' });
-  res.send(PIXEL);
-  fireOpenEvent(req.params.campaignId, req.params.sendId);
 });
 
 app.listen(PORT, () => {

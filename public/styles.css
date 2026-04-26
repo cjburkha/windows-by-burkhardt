@@ -110,6 +110,62 @@ nav a.nav-cta:hover {
     color: var(--apex-black);
 }
 
+nav {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
+nav a.nav-link {
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--apex-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+    white-space: nowrap;
+}
+
+nav a.nav-link:hover,
+nav a.nav-link-active {
+    color: var(--white);
+}
+
+/* ─── HAMBURGER ───────────────────────────────────── */
+
+.nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 4px;
+    flex-shrink: 0;
+}
+
+.nav-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--white);
+    border-radius: 2px;
+    transition: transform 0.25s, opacity 0.25s;
+}
+
+nav.nav-open .nav-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+nav.nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
+nav.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 /* ─── HERO ────────────────────────────────────────── */
 
 .hero {
@@ -759,6 +815,32 @@ footer {
     }
 }
 
+@media (max-width: 768px) {
+    .nav-toggle { display: flex; }
+
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: 72px;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.97);
+        border-bottom: 1px solid var(--apex-border);
+        backdrop-filter: blur(6px);
+        flex-direction: column;
+        align-items: center;
+        padding: 28px 0;
+        gap: 24px;
+        z-index: 99;
+    }
+
+    nav.nav-open .nav-links { display: flex; }
+
+    .testimonials-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 640px) {
     .header-inner {
         padding: 0 20px;
@@ -818,4 +900,322 @@ footer {
     width: 1px;
     height: 1px;
     overflow: hidden;
+}
+
+/* ─── INNER PAGE SHELL ─────────────────────────────── */
+
+.page-main {
+    padding-top: 72px;
+}
+
+.page-hero {
+    text-align: center;
+    padding: 80px 40px 60px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.page-hero h1 {
+    font-family: 'Merriweather', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--white);
+    margin-bottom: 20px;
+}
+
+.page-hero h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--apex-green);
+}
+
+.page-hero-sub {
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: var(--apex-body-text);
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+/* ─── REVIEWS ──────────────────────────────────────── */
+
+.reviews-section {
+    padding: 0 40px 100px;
+}
+
+.reviews-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 80px;
+}
+
+.testimonial-card {
+    background: var(--apex-dark-2);
+    border: 1px solid var(--apex-border);
+    border-radius: 12px;
+    padding: 32px;
+    font-style: normal;
+}
+
+.testimonial-card p {
+    font-family: 'Merriweather', serif;
+    font-style: italic;
+    font-size: 1rem;
+    line-height: 1.75;
+    color: var(--white);
+    margin-bottom: 20px;
+}
+
+.testimonial-card cite {
+    font-size: 0.82rem;
+    color: var(--apex-green);
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.review-platforms {
+    text-align: center;
+    padding: 80px 0 60px;
+    border-top: 1px solid var(--apex-border);
+}
+
+.review-platforms h2 {
+    font-family: 'Merriweather', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--white);
+    margin: 16px 0 12px;
+}
+
+.review-platforms-sub {
+    color: var(--apex-body-text);
+    margin-bottom: 48px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.platform-cards {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.platform-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: var(--apex-dark-2);
+    border: 1px solid var(--apex-border);
+    border-radius: 16px;
+    padding: 40px 52px;
+    text-decoration: none;
+    transition: border-color 0.25s, transform 0.25s;
+    min-width: 200px;
+}
+
+.platform-card:hover {
+    border-color: var(--apex-green);
+    transform: translateY(-4px);
+}
+
+.platform-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.platform-name {
+    font-family: 'Merriweather', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--white);
+}
+
+.platform-action {
+    font-size: 0.8rem;
+    color: var(--apex-muted);
+    letter-spacing: 0.03em;
+}
+
+.reviews-cta {
+    text-align: center;
+    padding-top: 80px;
+    border-top: 1px solid var(--apex-border);
+    margin-top: 60px;
+}
+
+.reviews-cta > p {
+    font-family: 'Merriweather', serif;
+    font-size: 1.3rem;
+    color: var(--white);
+    margin-bottom: 24px;
+}
+
+/* ─── GALLERY ──────────────────────────────────────── */
+
+.gallery-section {
+    padding: 0 40px 100px;
+}
+
+.gallery-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.gallery-placeholder {
+    border: 2px dashed var(--apex-border);
+    border-radius: 16px;
+    padding: 100px 40px;
+    text-align: center;
+}
+
+.gallery-placeholder-icon {
+    font-size: 3rem;
+    margin-bottom: 24px;
+}
+
+.gallery-placeholder h2 {
+    font-family: 'Merriweather', serif;
+    font-size: 1.8rem;
+    color: var(--white);
+    margin-bottom: 16px;
+}
+
+.gallery-placeholder p {
+    color: var(--apex-muted);
+    max-width: 480px;
+    margin: 0 auto 36px;
+}
+
+/* ─── CONTACT ──────────────────────────────────────── */
+
+.contact-section {
+    padding: 0 40px 100px;
+}
+
+.contact-inner {
+    max-width: 700px;
+    margin: 0 auto;
+    display: grid;
+    gap: 24px;
+}
+
+.contact-card {
+    background: var(--apex-dark-2);
+    border: 1px solid var(--apex-border);
+    border-radius: 12px;
+    padding: 36px 40px;
+}
+
+.contact-card h2 {
+    font-family: 'Merriweather', serif;
+    font-size: 1.3rem;
+    color: var(--white);
+    margin-bottom: 12px;
+}
+
+.contact-card p {
+    color: var(--apex-body-text);
+    margin-bottom: 8px;
+}
+
+.contact-card a {
+    color: var(--apex-green);
+    text-decoration: none;
+}
+
+.contact-card a:hover { text-decoration: underline; }
+
+.contact-cta-card {
+    background: transparent;
+    border: 1px solid var(--apex-green);
+    border-radius: 12px;
+    padding: 36px 40px;
+    text-align: center;
+}
+
+.contact-cta-card p {
+    font-family: 'Merriweather', serif;
+    font-size: 1.2rem;
+    color: var(--white);
+    margin-bottom: 20px;
+}
+
+/* ─── PRIVACY ──────────────────────────────────────── */
+
+.privacy-section {
+    padding: 0 40px 100px;
+}
+
+.privacy-inner {
+    max-width: 780px;
+    margin: 0 auto;
+}
+
+.privacy-last-updated {
+    font-size: 0.82rem;
+    color: var(--apex-muted);
+    margin-bottom: 48px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--apex-border);
+}
+
+.privacy-inner h2 {
+    font-family: 'Merriweather', serif;
+    font-size: 1.4rem;
+    color: var(--white);
+    margin: 48px 0 16px;
+}
+
+.privacy-inner p {
+    color: var(--apex-body-text);
+    margin-bottom: 16px;
+    line-height: 1.9;
+}
+
+.privacy-inner ul {
+    color: var(--apex-body-text);
+    padding-left: 24px;
+    margin-bottom: 16px;
+    line-height: 2;
+}
+
+.privacy-inner a {
+    color: var(--apex-green);
+    text-decoration: none;
+}
+
+.privacy-inner a:hover { text-decoration: underline; }
+
+/* ─── RESPONSIVE inner pages ───────────────────────── */
+
+@media (max-width: 640px) {
+    .page-hero {
+        padding: 60px 24px 48px;
+    }
+    .reviews-section,
+    .gallery-section,
+    .contact-section,
+    .privacy-section {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+    .platform-card {
+        padding: 32px 36px;
+        min-width: 150px;
+    }
+    .footer-links {
+        flex-wrap: wrap;
+        gap: 16px;
+    }
 }

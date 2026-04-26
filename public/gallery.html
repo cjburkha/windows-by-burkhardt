@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gallery &mdash; {{TENANT_BRAND_NAME}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Merriweather+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{{TENANT_FAVICON}}">
+    <meta name="wbb-ga4-id" content="{{TENANT_GA4_ID}}">
+    <link rel="stylesheet" href="styles.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{TENANT_GA4_ID}}"></script>
+    <script src="analytics.js"></script>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <div class="brand-primary">
+                <a href="/" class="brand-name">{{TENANT_BRAND_NAME}}</a>
+                <span class="brand-divider"></span>
+                <span class="brand-sub">An <strong>Apex Energy Group</strong> Partner</span>
+            </div>
+            <nav id="mainNav">
+                <div class="nav-links" id="navLinks">
+                    <a href="/reviews" class="nav-link">Reviews</a>
+                    <a href="/gallery" class="nav-link nav-link-active">Gallery</a>
+                    <a href="/contact" class="nav-link">Contact</a>
+                </div>
+                <a href="/#schedule" class="nav-cta">Schedule Now</a>
+                <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-main">
+
+        <div class="page-hero">
+            <p class="hero-eyebrow">Our Work</p>
+            <h1>Before &amp; After<br><em>Installations</em></h1>
+            <p class="page-hero-sub">See the transformation our windows bring to Milwaukee-area homes &mdash; from drafty originals to energy-efficient Insignia windows.</p>
+        </div>
+
+        <section class="gallery-section">
+            <div class="gallery-inner">
+                <div class="gallery-placeholder">
+                    <div class="gallery-placeholder-icon">&#128247;</div>
+                    <h2>Photos Coming Soon</h2>
+                    <p>We&#8217;re collecting before &amp; after photos from our recent installs. Check back soon &mdash; or schedule your own consultation and become part of the gallery.</p>
+                    <a href="/#schedule" class="btn-outline">Schedule a Free Consultation</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <p class="footer-name">{{TENANT_BRAND_NAME}}</p>
+                <p class="footer-partner">An Apex Energy Group Authorized Partner</p>
+            </div>
+            <div class="footer-links">
+                <a href="/#schedule">Schedule Consultation</a>
+                <a href="/reviews">Reviews</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="https://www.apexenergygroup.com" target="_blank" rel="noopener">Apex Energy Group</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 {{TENANT_BRAND_NAME}}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,5 +1,23 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // ── Mobile nav toggle ─────────────────────────────────────────────────────
+    const navToggle = document.getElementById('navToggle');
+    const mainNav   = document.getElementById('mainNav');
+    if (navToggle && mainNav) {
+        navToggle.addEventListener('click', function() {
+            const open = mainNav.classList.toggle('nav-open');
+            navToggle.setAttribute('aria-expanded', String(open));
+        });
+        mainNav.querySelectorAll('.nav-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                mainNav.classList.remove('nav-open');
+                navToggle.setAttribute('aria-expanded', 'false');
+            });
+        });
+    }
+
     const form = document.getElementById('consultationForm');
+    if (!form) return; // inner pages — nav toggle is all we need
+
     const formMessage = document.getElementById('formMessage');
     const submitButton = form.querySelector('.btn-submit');
 

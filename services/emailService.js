@@ -74,6 +74,8 @@ Co-branded with Apex Energy Group.
 
   const params = {
     Source: `${tenant.brandName} <${tenant.fromEmail}>`,
+    Destination: {
+      ToAddresses: [tenant.recipientEmail],
       ...(tenant.ccEmail ? { CcAddresses: [tenant.ccEmail] } : {})
     },
     ReplyToAddresses: [email], // safe — only used as reply-to, not injected into headers
@@ -196,6 +198,7 @@ Co-branded with Apex Energy Group
   try {
     const command = new SendEmailCommand({
       Source: `${tenant.brandName} <${tenant.fromEmail}>`,
+      Destination: { ToAddresses: [email] },
       ReplyToAddresses: [tenant.recipientEmail],
       Message: {
         Subject: { Data: `We received your request — ${tenant.brandName}`, Charset: 'UTF-8' },
