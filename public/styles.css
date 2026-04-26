@@ -1072,29 +1072,35 @@ footer {
     margin: 0 auto;
 }
 
-.gallery-placeholder {
-    border: 2px dashed var(--apex-border);
-    border-radius: 16px;
-    padding: 100px 40px;
-    text-align: center;
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 60px;
 }
 
-.gallery-placeholder-icon {
-    font-size: 3rem;
-    margin-bottom: 24px;
+.gallery-item {
+    margin: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--apex-surface);
 }
 
-.gallery-placeholder h2 {
-    font-family: 'Merriweather', serif;
-    font-size: 1.8rem;
-    color: var(--white);
-    margin-bottom: 16px;
+.gallery-item a {
+    display: block;
+    line-height: 0;
 }
 
-.gallery-placeholder p {
-    color: var(--apex-muted);
-    max-width: 480px;
-    margin: 0 auto 36px;
+.gallery-item img {
+    width: 100%;
+    height: 340px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    display: block;
+}
+
+.gallery-item img:hover {
+    transform: scale(1.03);
 }
 
 /* ─── CONTACT ──────────────────────────────────────── */
@@ -1209,6 +1215,12 @@ footer {
     .privacy-section {
         padding-left: 24px;
         padding-right: 24px;
+    }
+    .gallery-grid {
+        grid-template-columns: 1fr;
+    }
+    .gallery-item img {
+        height: 260px;
     }
     .platform-card {
         padding: 32px 36px;

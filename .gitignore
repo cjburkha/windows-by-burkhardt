@@ -10,6 +10,5 @@ yarn-error.log*
 dist/
 build/
 coverage/
-public/images/
 
 /generated/prisma
