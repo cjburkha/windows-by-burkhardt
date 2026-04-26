@@ -125,7 +125,7 @@ test.describe('Consultation form – step 2', () => {
 });
 
 test.describe('Full form submission', () => {
-  test('all fields filled — complete two-step flow with email preview', async ({ page }) => {
+  test('all fields filled — complete two-step flow with email preview @no mock', async ({ page }) => {
     await page.goto('/#schedule');
 
     // Step 1: fill every field
