@@ -34,6 +34,7 @@ jobs:
             - 'Dockerfile'
             - 'package*.json'
             - 'public/index.html'
+            - 'public/*.html'
 
   # ── Fast path: CSS/JS/images → S3 sync (~15 seconds) ─────────────────────────
   # index.html is excluded — it's rendered server-side with tenant tokens.
@@ -60,6 +61,17 @@ jobs:
           --cache-control "public,max-age=86400" \
           --delete
         echo "Static assets synced to s3://${{ secrets.S3_BUCKET_NAME }}"
+
+    - name: Invalidate CloudFront cache
+      run: |
+        if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+          echo "CloudFront cache invalidated"
+        else
+          echo "No CLOUDFRONT_DISTRIBUTION_ID secret set — skipping invalidation"
+        fi
 
   # ── Slow path: Docker build → ECR → App Runner (~2–5 minutes) ────────────────
   # Docker BuildKit GHA cache: node_modules layer is reused when package.json
