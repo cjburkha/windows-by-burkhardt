@@ -175,14 +175,20 @@ for (const page of PAGE_NAMES) {
   }
 }
 
+function encodeEntities(str) {
+  return str.split('').map(c => `&#${c.charCodeAt(0)};`).join('');
+}
+
 function renderPage(page, tenant) {
   const tmpl = pageTemplates[page];
   if (!tmpl) return null;
+  const encodedEmail = encodeEntities(tenant.recipientEmail || '');
   let html = tmpl
-    .replace(/\{\{TENANT_BRAND_NAME\}\}/g,     tenant.brandName)
-    .replace(/\{\{TENANT_FAVICON\}\}/g,         tenant.favicon || '/favicon.svg')
-    .replace(/\{\{TENANT_GA4_ID\}\}/g,          tenant.ga4Id || '')
-    .replace(/\{\{TENANT_RECIPIENT_EMAIL\}\}/g, tenant.recipientEmail || '');
+    .replace(/\{\{TENANT_BRAND_NAME\}\}/g,            tenant.brandName)
+    .replace(/\{\{TENANT_FAVICON\}\}/g,               tenant.favicon || '/favicon.svg')
+    .replace(/\{\{TENANT_GA4_ID\}\}/g,                tenant.ga4Id || '')
+    .replace(/\{\{TENANT_RECIPIENT_EMAIL_ENCODED\}\}/g, encodedEmail)
+    .replace(/\{\{TENANT_RECIPIENT_EMAIL\}\}/g,       tenant.recipientEmail || '');
   if (!tenant.ga4Id) {
     html = html.replace(/<script[^>]*googletagmanager\.com[^>]*><\/script>\n?/g, '');
   }
