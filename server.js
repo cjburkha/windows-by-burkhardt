@@ -160,27 +160,63 @@ indexHtmlTemplate = indexHtmlTemplate
   .replace(/src="script\.js(\?[^"]*)?"/g,     `src="${pfx('script.js')}?v=${ASSET_VERSION}"`)
   .replace(/src="analytics\.js(\?[^"]*)?"/g,  `src="${pfx('analytics.js')}?v=${ASSET_VERSION}"`);
 
-// Load inner page templates (reviews, gallery, contact, privacy)
+// ── Inner page template loading ───────────────────────────────────────────────
+// In production (ASSET_BASE set): templates are fetched from S3 at request time
+//   under the _templates/ prefix.  This means HTML-only changes deploy in ~15s
+//   via the frontend (S3 sync) path — no Docker rebuild required.
+//   A 5-minute in-memory cache avoids hitting S3 on every request.
+// In dev / CI (ASSET_BASE unset): templates are read from disk as before.
 const PAGE_NAMES = ['reviews', 'gallery', 'contact', 'privacy'];
-const pageTemplates = {};
-for (const page of PAGE_NAMES) {
-  const filePath = path.join(__dirname, 'public', `${page}.html`);
-  if (fs.existsSync(filePath)) {
-    let tmpl = fs.readFileSync(filePath, 'utf8');
-    tmpl = tmpl
-      .replace(/href="styles\.css(\?[^"]*)?"/g,   `href="${pfx('styles.css')}?v=${ASSET_VERSION}"`)
-      .replace(/src="script\.js(\?[^"]*)?"/g,     `src="${pfx('script.js')}?v=${ASSET_VERSION}"`)
-      .replace(/src="analytics\.js(\?[^"]*)?"/g,  `src="${pfx('analytics.js')}?v=${ASSET_VERSION}"`);
-    pageTemplates[page] = tmpl;
+const templateCache = new Map(); // page → { html, fetchedAt }
+const TEMPLATE_TTL_MS = 5 * 60 * 1000;
+
+function applyAssetVersion(tmpl) {
+  return tmpl
+    .replace(/href="styles\.css(\?[^"]*)?"/g,   `href="${pfx('styles.css')}?v=${ASSET_VERSION}"`)
+    .replace(/src="script\.js(\?[^"]*)?"/g,     `src="${pfx('script.js')}?v=${ASSET_VERSION}"`)
+    .replace(/src="analytics\.js(\?[^"]*)?"/g,  `src="${pfx('analytics.js')}?v=${ASSET_VERSION}"`);
+}
+
+async function fetchPageTemplate(page) {
+  const cached = templateCache.get(page);
+  if (cached && Date.now() - cached.fetchedAt < TEMPLATE_TTL_MS) {
+    return cached.html;
   }
+
+  let html;
+  if (ASSET_BASE) {
+    // Production: fetch live from S3 so HTML changes deploy without a Docker rebuild
+    const url = `${ASSET_BASE}/_templates/${page}.html`;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${url}`);
+      html = await resp.text();
+    } catch (err) {
+      console.error(`Template fetch failed for "${page}": ${err.message}`);
+      if (cached) {
+        console.warn(`Serving stale cached template for "${page}"`);
+        return cached.html;
+      }
+      return null;
+    }
+  } else {
+    // Dev / CI: read from disk
+    const filePath = path.join(__dirname, 'public', `${page}.html`);
+    if (!fs.existsSync(filePath)) return null;
+    html = fs.readFileSync(filePath, 'utf8');
+  }
+
+  html = applyAssetVersion(html);
+  templateCache.set(page, { html, fetchedAt: Date.now() });
+  return html;
 }
 
 function encodeEntities(str) {
   return str.split('').map(c => `&#${c.charCodeAt(0)};`).join('');
 }
 
-function renderPage(page, tenant) {
-  const tmpl = pageTemplates[page];
+async function renderPage(page, tenant) {
+  const tmpl = await fetchPageTemplate(page);
   if (!tmpl) return null;
   const encodedEmail = encodeEntities(tenant.recipientEmail || '');
   let html = tmpl
@@ -218,11 +254,11 @@ app.get('/', (req, res) => {
   res.send(renderHtml(tenant));
 });
 
-// Inner pages — each HTML file is pre-loaded and token-replaced per request
+// Inner pages — token-replaced per request; template fetched from S3 in prod
 for (const page of PAGE_NAMES) {
-  app.get(`/${page}`, (req, res) => {
+  app.get(`/${page}`, async (req, res) => {
     const tenant = resolveTenant(req);
-    const html = renderPage(page, tenant);
+    const html = await renderPage(page, tenant);
     if (!html) return res.redirect('/');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Content-Type', 'text/html');

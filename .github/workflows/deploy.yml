@@ -34,7 +34,6 @@ jobs:
             - 'Dockerfile'
             - 'package*.json'
             - 'public/index.html'
-            - 'public/*.html'
 
   # ── Fast path: CSS/JS/images → S3 sync (~15 seconds) ─────────────────────────
   # index.html is excluded — it's rendered server-side with tenant tokens.
@@ -61,6 +60,20 @@ jobs:
           --cache-control "public,max-age=86400" \
           --delete
         echo "Static assets synced to s3://${{ secrets.S3_BUCKET_NAME }}"
+
+    - name: Sync HTML templates to S3
+      # Inner page HTML files are stored under _templates/ so App Runner can
+      # fetch them at request time — changes go live in ~15s without a Docker rebuild.
+      # index.html is excluded — it is baked into the Docker image (needs tenant tokens
+      # applied at startup before ASSET_VERSION is known).
+      run: |
+        aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }}/_templates/ \
+          --exclude "*" \
+          --include "*.html" \
+          --exclude "index.html" \
+          --cache-control "no-store" \
+          --delete
+        echo "HTML templates synced to s3://${{ secrets.S3_BUCKET_NAME }}/_templates/"
 
     - name: Invalidate CloudFront cache
       run: |
