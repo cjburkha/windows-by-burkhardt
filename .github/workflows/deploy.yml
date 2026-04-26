@@ -245,10 +245,12 @@ jobs:
       # BASE_URL / JOSE_BASE_URL point to the App Runner custom domains via Route 53.
       # navigator.webdriver is true in Playwright so analytics.js auto-routes
       # smoke traffic to GA4 DebugView — excluded from standard reports.
+      # "--grep-invert no mock" skips all real-API form submissions on both tenants
+      # so smoke tests never trigger real SES sends to chris@ or jose@ in prod.
       env:
         BASE_URL:      https://${{ secrets.APP_RUNNER_DOMAIN }}
         JOSE_BASE_URL: https://windowsbyjose.com
-      run: npm test
+      run: npx playwright test --grep-invert "no mock"
 
     - name: Upload Playwright report
       if: always()
