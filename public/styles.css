@@ -981,6 +981,25 @@ footer {
     letter-spacing: 0.04em;
 }
 
+.testimonial-stars {
+    color: #f5c518;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+}
+
+.review-more {
+    color: var(--apex-green);
+    font-style: normal;
+    font-size: 0.85rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.review-more:hover {
+    text-decoration: underline;
+}
+
 .review-platforms {
     text-align: center;
     padding: 80px 0 60px;
