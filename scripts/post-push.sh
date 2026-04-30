@@ -29,7 +29,7 @@ echo ""
   if [ $EXIT -ne 0 ]; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║  ❌  SMOKE TESTS FAILED — diagnosing...                  ║"
+    echo "║  ❌  CI FAILED — diagnosing...                           ║"
     echo "╚══════════════════════════════════════════════════════════╝"
     echo ""
     # Print just the failure section — strip GitHub log prefixes and timestamps
@@ -38,7 +38,7 @@ echo ""
       | grep -v "^##\[" \
       | grep -v "^shell:\|^env:" \
       | sed '/^[[:space:]]*$/d' \
-      | grep -A 40 "Error:\|FAILED\|✘\|expect(" \
+      | grep -A 40 "Error:\|FAILED\|✘\|expect(\|\[ERROR\]" \
       | head -80
     echo ""
     echo "  Full log:    gh run view $RUN_ID --log-failed"

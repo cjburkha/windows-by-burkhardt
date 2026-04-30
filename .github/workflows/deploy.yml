@@ -182,10 +182,20 @@ jobs:
               ImageRepositoryType: "ECR"
             }
           }')
-        aws apprunner update-service \
-          --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
-          --source-configuration "$CONFIG" \
-          --region ${{ env.AWS_REGION }}
+        # Retry up to 10 times (90s apart) in case a previous deploy is still in progress.
+        for attempt in $(seq 1 10); do
+          OUTPUT=$(aws apprunner update-service \
+            --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }} \
+            --source-configuration "$CONFIG" \
+            --region ${{ env.AWS_REGION }} 2>&1) && break
+          if echo "$OUTPUT" | grep -q 'OPERATION_IN_PROGRESS'; then
+            echo "  App Runner busy (attempt $attempt/10) — waiting 90s..."
+            sleep 90
+          else
+            echo "$OUTPUT"
+            exit 1
+          fi
+        done
 
     - name: Wait for App Runner deployment
       # 'aws apprunner wait' is not a supported subcommand — poll manually.
