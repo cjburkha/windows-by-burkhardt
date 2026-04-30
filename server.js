@@ -84,6 +84,11 @@ async function loadTenants() {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// App Runner (and most AWS load balancers) terminate TLS and forward the real
+// client IP in X-Forwarded-For. Tell Express to trust one proxy hop so that
+// express-rate-limit and req.ip see the real client IP, not the ALB address.
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet({
   // Allow GA4 to receive the referrer so traffic sources are tracked correctly
