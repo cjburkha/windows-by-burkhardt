@@ -11,9 +11,12 @@ echo "    Report will open automatically when smoke tests finish."
 echo ""
 
 # Run in background so the terminal returns immediately
+REPO_DIR="$(git rev-parse --show-toplevel)"
+SHA="$(git rev-parse HEAD)"
 (
+  cd "$REPO_DIR" || exit 0
+
   # Wait for GitHub to register the run for this exact commit SHA
-  SHA=$(git rev-parse HEAD)
   RUN_ID=""
   for i in $(seq 1 15); do
     RUN_ID=$(gh run list --commit "$SHA" --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
