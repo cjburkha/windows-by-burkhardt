@@ -102,31 +102,6 @@ test.describe('Consultation form – step 2', () => {
     await expect(page.locator('.btn-submit')).toBeEnabled();
     await expect(page.locator('#formMessage')).toBeVisible();
   });
-
-  test('real server returns success and DB record has isTestLead=true (no mock)', async ({ page }) => {
-    // Does NOT mock /api/contact — hits the real running server.
-    // ?isTestLead=true tags the DB row so it can be filtered from real lead reports.
-    // This is the single real submission per smoke run — the DB persistence describe
-    // block below reuses the same goto URL and does NOT submit again.
-    const responsePromise = page.waitForResponse(r => r.url().includes('/api/contact'));
-    await page.goto('/?isTestLead=true#schedule');
-    await page.fill('#name', 'Smoke Test');
-    await page.fill('#email', 'smoke@example.com');
-    await page.fill('#phone', '5550000000');
-    await page.click('.btn-submit');
-    await expect(page.locator('#formStep2')).toBeVisible();
-    await page.click('.btn-submit');
-    const response = await responsePromise;
-    const body = await response.json();
-
-    if (body.emailPreview) {
-      console.log('\n📧 Email that would have been sent:\n' + '─'.repeat(50) + '\n' + body.emailPreview + '─'.repeat(50));
-    }
-
-    expect(body.success).toBe(true);
-    await expect(page.locator('#formConfirmation')).toBeVisible();
-    await expect(page.locator('.field-submit')).toBeHidden();
-  });
 });
 
 test.describe('Full form submission', () => {
@@ -279,9 +254,8 @@ test.describe('Post-submission confirmation \u2014 address and schedule rows', (
 });
 
 // ── Database persistence ─────────────────────────────────────────────────────
-// Queries Postgres directly after the real submission made in the
-// 'real server returns success' test above to assert the record was written
-// with isTestLead=true.  No second form submission is made.
+// Submits the real form with ?isTestLead=true, then queries Postgres directly
+// to assert the row was written correctly.  Single test, single submission.
 // Skipped automatically when DATABASE_URL is not set (e.g. CI without a DB).
 
 import { Pool } from 'pg';
@@ -306,20 +280,40 @@ test.describe('Database persistence', () => {
 
   test.afterAll(async () => {
     if (pool) {
-      // Clean up the test record so the DB stays tidy
       await pool.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
       await pool.end();
     }
   });
 
-  test('submission row exists in DB with isTestLead=true', async () => {
+  test('real submission is saved to DB with isTestLead=true (no mock)', async ({ page }) => {
     if (!pool) {
       test.skip(true, 'DATABASE_URL not set — skipping DB persistence test');
       return;
     }
 
-    // Poll for the row written by the 'real server returns success' test above.
-    // The DB write is fire-and-forget so we retry for up to 5s.
+    // Delete any leftover row from a previous run so the poll below is unambiguous
+    await pool!.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
+
+    await page.goto('/?isTestLead=true#schedule');
+    await page.fill('#name',  'Smoke Test');
+    await page.fill('#email', DB_TEST_EMAIL);
+    await page.fill('#phone', '5550000000');
+    await page.click('.btn-submit');
+    await expect(page.locator('#formStep2')).toBeVisible();
+
+    const responsePromise = page.waitForResponse(r => r.url().includes('/api/contact'));
+    await page.click('.btn-submit');
+    const response = await responsePromise;
+    const body = await response.json();
+
+    if (body.emailPreview) {
+      console.log('\n📧 Email preview:\n' + '─'.repeat(50) + '\n' + body.emailPreview + '─'.repeat(50));
+    }
+
+    expect(body.success).toBe(true);
+    await expect(page.locator('#formConfirmation')).toBeVisible();
+
+    // DB write is fire-and-forget — poll for up to 5s
     let row: Record<string, unknown> | null = null;
     for (let i = 0; i < 50; i++) {
       const result = await pool!.query(

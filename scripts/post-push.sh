@@ -26,9 +26,10 @@ echo ""
   gh run watch "$RUN_ID" --exit-status 2>/dev/null
   EXIT=$?
 
-  # Download and open the Playwright report regardless of pass/fail
-  # Artifact upload happens after the job finishes — retry for up to 60s
-  rm -rf playwright-report
+  # Artifact upload happens after the job completes — give GitHub 15s head start
+  # then retry download for up to 90s total
+  echo "    Waiting for artifact upload to complete..."
+  sleep 15
   for i in $(seq 1 12); do
     gh run download "$RUN_ID" -n playwright-report -D playwright-report 2>/dev/null && break
     echo "    Waiting for artifact to be available (attempt $i/12)..."
