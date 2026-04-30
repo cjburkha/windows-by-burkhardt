@@ -312,7 +312,10 @@ test.describe('Database persistence', () => {
       return;
     }
 
-    await page.goto('/#schedule');
+    // ?isTestLead=true marks this submission in the DB so it can be filtered
+    // out of real lead reports.  The query param is forwarded by script.js to
+    // /api/contact and read by server.js before the DB write.
+    await page.goto('/?isTestLead=true#schedule');
 
     // Step 1
     await page.fill('#name',    'DB Test User');
@@ -367,5 +370,6 @@ test.describe('Database persistence', () => {
     expect(row!['referralLastName']).toBe('Person');
     expect(row!['referralPhone']).toBe('(555) 999-0000');  // auto-formatted by the referral phone input handler
     expect(row!['tenantId']).toBe('burkhardt');            // submission is saved with the resolved tenant ID
+    expect(row!['isTestLead']).toBe(true);                 // ?isTestLead=true query param was forwarded to server
   });
 });

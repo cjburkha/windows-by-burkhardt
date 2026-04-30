@@ -275,6 +275,7 @@ jobs:
       env:
         BASE_URL:      https://${{ secrets.APP_RUNNER_DOMAIN }}
         JOSE_BASE_URL: https://windowsbyjose.com
+        DATABASE_URL:  ${{ secrets.DATABASE_URL }}
       run: npx playwright test --grep-invert "no mock"
 
     - name: Upload Playwright report
