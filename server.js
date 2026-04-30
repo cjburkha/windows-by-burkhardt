@@ -274,13 +274,16 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       return res.json({ success: true });
     }
 
-    // Geo-block — this is a local Wisconsin business; reject non-US submissions
-    const forwarded = req.headers['x-forwarded-for'];
-    const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip;
-    const geo = geoip.lookup(ip);
-    if (geo && geo.country !== 'US') {
-      console.warn(`Blocked non-US submission from ${ip} (${geo.country})`);
-      return res.status(403).json({ success: false, message: 'Service not available in your region.' });
+    // Geo-block — this is a local Wisconsin business; reject non-US submissions.
+    // isTestLead bypasses the check so CI smoke tests (GitHub runners in EU) pass through.
+    if (!isTestLead) {
+      const forwarded = req.headers['x-forwarded-for'];
+      const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip;
+      const geo = geoip.lookup(ip);
+      if (geo && geo.country !== 'US') {
+        console.warn(`Blocked non-US submission from ${ip} (${geo.country})`);
+        return res.status(403).json({ success: false, message: 'Service not available in your region.' });
+      }
     }
 
     // Validate required fields
