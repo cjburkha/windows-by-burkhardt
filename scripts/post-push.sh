@@ -12,13 +12,17 @@ echo ""
 
 # Run in background so the terminal returns immediately
 (
-  # Wait a few seconds for GitHub to register the new run
-  sleep 6
-
-  RUN_ID=$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
+  # Wait for GitHub to register the run for this exact commit SHA
+  SHA=$(git rev-parse HEAD)
+  RUN_ID=""
+  for i in $(seq 1 15); do
+    RUN_ID=$(gh run list --commit "$SHA" --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
+    [ -n "$RUN_ID" ] && break
+    sleep 3
+  done
 
   if [ -z "$RUN_ID" ]; then
-    echo "⚠️  Could not find a GitHub Actions run — is gh authenticated?"
+    echo "⚠️  Could not find a GitHub Actions run for commit $SHA — is gh authenticated?"
     exit 0
   fi
 
