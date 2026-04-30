@@ -316,27 +316,31 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       }
     }
 
-    const emailResult = await emailService.sendConsultationRequest({
-      name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
-      referralFirstName, referralLastName, referralPhone
-    }, tenant);
+    // Test leads skip SES entirely — smoke@example.com is not SES-verified.
+    // We still save to DB and return success so the smoke test can verify persistence.
+    const emailResult = isTestLead
+      ? { success: true, emailBody: '[skipped — isTestLead]' }
+      : await emailService.sendConsultationRequest({
+          name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
+          referralFirstName, referralLastName, referralPhone
+        }, tenant);
 
     if (emailResult.success) {
-      // Send confirmation to customer — non-blocking, never fails the response.
-      emailService.sendConfirmation({
-        name, email, preferredDate, preferredTime
-      }, tenant).catch(err => console.error('Confirmation email failed:', err.message));
+      if (!isTestLead) {
+        // Send confirmation to customer — non-blocking, never fails the response.
+        emailService.sendConfirmation({
+          name, email, preferredDate, preferredTime
+        }, tenant).catch(err => console.error('Confirmation email failed:', err.message));
 
-      // Meta Conversions API — non-blocking server-side conversion event.
-      // Deduplicates with the browser pixel via shared eventId.
-      const forwarded2 = req.headers['x-forwarded-for'];
-      const clientIp   = forwarded2 ? forwarded2.split(',')[0].trim() : req.ip;
-      metaConversions.sendScheduleEvent({
-        name, email, phone, city, zip,
-        userAgent: req.headers['user-agent'],
-        eventId: typeof eventId === 'string' ? eventId : undefined,
-        eventSourceUrl: `https://${req.hostname}/`,
-      }).catch(err => console.error('Meta CAPI failed:', err.message));
+        // Meta Conversions API — non-blocking server-side conversion event.
+        // Deduplicates with the browser pixel via shared eventId.
+        metaConversions.sendScheduleEvent({
+          name, email, phone, city, zip,
+          userAgent: req.headers['user-agent'],
+          eventId: typeof eventId === 'string' ? eventId : undefined,
+          eventSourceUrl: `https://${req.hostname}/`,
+        }).catch(err => console.error('Meta CAPI failed:', err.message));
+      }
 
       // Save to database — non-blocking. A DB failure logs but never fails the response.
       dbService.saveSubmission({
@@ -350,7 +354,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       res.json({ 
         success: true, 
         message: 'Your consultation request has been submitted successfully!',
-        ...((process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true') && { emailPreview: emailResult.emailBody })
+        ...((process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true' || isTestLead) && { emailPreview: emailResult.emailBody })
       });
     } else {
       throw new Error(emailResult.error);
