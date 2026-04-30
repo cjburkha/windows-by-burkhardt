@@ -26,6 +26,26 @@ echo ""
   gh run watch "$RUN_ID" --exit-status 2>/dev/null
   EXIT=$?
 
+  if [ $EXIT -ne 0 ]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  ❌  SMOKE TESTS FAILED — diagnosing...                  ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo ""
+    # Print just the failure section — strip GitHub log prefixes and timestamps
+    gh run view "$RUN_ID" --log-failed 2>&1 \
+      | sed 's/^[^\t]*\t[^\t]*\t//' \
+      | grep -v "^##\[" \
+      | grep -v "^shell:\|^env:" \
+      | sed '/^[[:space:]]*$/d' \
+      | grep -A 40 "Error:\|FAILED\|✘\|expect(" \
+      | head -80
+    echo ""
+    echo "  Full log:    gh run view $RUN_ID --log-failed"
+    echo "  All runs:    gh run list --limit 5"
+    echo ""
+  fi
+
   # Artifact upload happens after the job completes — give GitHub 15s head start
   # then retry download for up to 90s total
   echo "    Waiting for artifact upload to complete..."
@@ -41,13 +61,10 @@ echo ""
     if [ $EXIT -eq 0 ]; then
       echo "✅  Deploy passed — report opened."
     else
-      echo "❌  Deploy FAILED — report opened. Check the red tests."
+      echo "❌  Report opened. Fix the failures above, then push again."
     fi
   else
-    echo "⚠️  No Playwright report found in this run's artifacts."
-    if [ $EXIT -ne 0 ]; then
-      echo "    Check the Actions log: gh run view $RUN_ID --log-failed"
-    fi
+    echo "⚠️  No Playwright report artifact found for run $RUN_ID."
   fi
 ) &
 
