@@ -92,9 +92,9 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://wbb-static-prod.s3.us-east-1.amazonaws.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "https://www.googletagmanager.com", "https://wbb-static-prod.s3.us-east-1.amazonaws.com"],
-      imgSrc: ["'self'", "data:", "https://www.google-analytics.com"],
-      connectSrc: ["'self'", "https://www.google-analytics.com", "https://analytics.google.com", "https://region1.google-analytics.com", "https://stats.g.doubleclick.net"],
+      scriptSrc: ["'self'", "https://www.googletagmanager.com", "https://wbb-static-prod.s3.us-east-1.amazonaws.com", "https://connect.facebook.net"],
+      imgSrc: ["'self'", "data:", "https://www.google-analytics.com", "https://www.facebook.com"],
+      connectSrc: ["'self'", "https://www.google-analytics.com", "https://analytics.google.com", "https://region1.google-analytics.com", "https://stats.g.doubleclick.net", "https://www.facebook.com"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"]
