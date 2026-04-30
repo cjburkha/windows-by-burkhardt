@@ -272,63 +272,53 @@ import { Pool } from 'pg';
 
 const DB_TEST_EMAIL = 'smoke@example.com';
 
-function getPool(): Pool | null {
-  const url = process.env.DATABASE_URL;
-  if (!url) return null;
-  return new Pool({
-    connectionString: url.replace(/[?&]sslmode=[^&]*/g, ''),
-    ssl: { rejectUnauthorized: false },
-  });
-}
-
 test.describe('Database persistence', () => {
-  let pool: Pool | null;
+  let pool: Pool;
 
   test.beforeAll(() => {
-    pool = getPool();
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL is not set — cannot run DB persistence tests');
+    pool = new Pool({
+      connectionString: url.replace(/[?&]sslmode=[^&]*/g, ''),
+      ssl: { rejectUnauthorized: false },
+    });
   });
 
   test.afterAll(async () => {
-    if (pool) {
-      await pool.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
-      await pool.end();
-    }
+    await pool.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
+    await pool.end();
   });
 
-  test('real submission sends email and is saved to DB', async ({ page }) => {
-    if (!pool) {
-      test.skip(true, 'DATABASE_URL not set — skipping DB persistence test');
-      return;
-    }
+  test('form submission creates a DB record', async ({ page }) => {
+    // Delete any leftover row so the poll below is unambiguous
+    await pool.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
 
-    // Delete any leftover row from a previous run so the poll below is unambiguous
-    await pool!.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
-
-    // ?isTestLead=true marks the DB row as a test submission (filterable in reports)
-    // but the full SES + CAPI flow still runs — this verifies real email delivery.
+    // Navigate to the live site — ?isTestLead=true flags the row as a test lead
+    // so it stays filterable in the DB, but the full server path runs unchanged.
     await page.goto('/?isTestLead=true#schedule');
+
+    // Step 1: fill required fields and advance to step 2
     await page.fill('#name',  'Smoke Test');
     await page.fill('#email', DB_TEST_EMAIL);
     await page.fill('#phone', '5550000000');
     await page.click('.btn-submit');
-    await expect(page.locator('#formStep2')).toBeVisible();
 
+    // Step 2 referral panel should appear; then click Complete to fire the API call
+    await expect(page.locator('#formStep2')).toBeVisible();
     const responsePromise = page.waitForResponse(r => r.url().includes('/api/contact'));
     await page.click('.btn-submit');
     const response = await responsePromise;
     const body = await response.json();
 
-    if (body.emailPreview) {
-      console.log('\n📧 Email preview:\n' + '─'.repeat(50) + '\n' + body.emailPreview + '─'.repeat(50));
-    }
+    expect(body.success, `API returned success=false: ${JSON.stringify(body)}`).toBe(true);
 
-    expect(body.success).toBe(true);
+    // Confirmation panel proves the browser-side flow completed
     await expect(page.locator('#formConfirmation')).toBeVisible();
 
-    // DB write is fire-and-forget — poll for up to 5s
+    // DB write is fire-and-forget in the server — poll up to 10s for the row
     let row: Record<string, unknown> | null = null;
-    for (let i = 0; i < 50; i++) {
-      const result = await pool!.query(
+    for (let i = 0; i < 100; i++) {
+      const result = await pool.query(
         'SELECT * FROM "Submission" WHERE email = $1 ORDER BY "submittedAt" DESC LIMIT 1',
         [DB_TEST_EMAIL]
       );
@@ -336,7 +326,7 @@ test.describe('Database persistence', () => {
       await new Promise(r => setTimeout(r, 100));
     }
 
-    expect(row, 'No DB record found for smoke test submission').not.toBeNull();
+    expect(row, 'No DB record found — the server did not persist the submission').not.toBeNull();
     expect(row!['name']).toBe('Smoke Test');
     expect(row!['email']).toBe(DB_TEST_EMAIL);
     expect(row!['tenantId']).toBe('burkhardt');
