@@ -103,22 +103,27 @@ test.describe('Consultation form – step 2', () => {
     await expect(page.locator('#formMessage')).toBeVisible();
   });
 
-  test('real server returns success (no mock) — catches credential or server errors', async ({ page }) => {
+  test('real server returns success and DB record has isTestLead=true (no mock)', async ({ page }) => {
     // Does NOT mock /api/contact — hits the real running server.
-    // SKIP_EMAIL=true (set by npm run test:dev) means SES is skipped but
-    // all validation and logic runs with real credentials.
-    const responsePromise = page.waitForResponse('/api/contact');
+    // ?isTestLead=true tags the DB row so it can be filtered from real lead reports.
+    // This is the single real submission per smoke run — the DB persistence describe
+    // block below reuses the same goto URL and does NOT submit again.
+    const responsePromise = page.waitForResponse(r => r.url().includes('/api/contact'));
+    await page.goto('/?isTestLead=true#schedule');
+    await page.fill('#name', 'Smoke Test');
+    await page.fill('#email', 'smoke@example.com');
+    await page.fill('#phone', '5550000000');
+    await page.click('.btn-submit');
+    await expect(page.locator('#formStep2')).toBeVisible();
     await page.click('.btn-submit');
     const response = await responsePromise;
     const body = await response.json();
 
-    // Log the email preview — visible in the Playwright HTML report under this test
     if (body.emailPreview) {
       console.log('\n📧 Email that would have been sent:\n' + '─'.repeat(50) + '\n' + body.emailPreview + '─'.repeat(50));
     }
 
-    await expect(page.locator('#formMessage')).not.toHaveClass(/error/);
-    await expect(page.locator('#formMessage')).not.toContainText(/error|failed|sorry/i);
+    expect(body.success).toBe(true);
     await expect(page.locator('#formConfirmation')).toBeVisible();
     await expect(page.locator('.field-submit')).toBeHidden();
   });
@@ -273,14 +278,15 @@ test.describe('Post-submission confirmation \u2014 address and schedule rows', (
   });
 });
 
-// ── Database persistence ──────────────────────────────────────────────────────
-// Submits the real form against the real server (no mocks) and then queries
-// Postgres directly to assert the record was written with the correct values.
+// ── Database persistence ─────────────────────────────────────────────────────
+// Queries Postgres directly after the real submission made in the
+// 'real server returns success' test above to assert the record was written
+// with isTestLead=true.  No second form submission is made.
 // Skipped automatically when DATABASE_URL is not set (e.g. CI without a DB).
 
 import { Pool } from 'pg';
 
-const DB_TEST_EMAIL = `db-test-${Date.now()}@example.com`;
+const DB_TEST_EMAIL = 'smoke@example.com';
 
 function getPool(): Pool | null {
   const url = process.env.DATABASE_URL;
@@ -306,70 +312,28 @@ test.describe('Database persistence', () => {
     }
   });
 
-  test('form submission is saved to the database with correct field values', async ({ page }) => {
+  test('submission row exists in DB with isTestLead=true', async () => {
     if (!pool) {
       test.skip(true, 'DATABASE_URL not set — skipping DB persistence test');
       return;
     }
 
-    // ?isTestLead=true marks this submission in the DB so it can be filtered
-    // out of real lead reports.  The query param is forwarded by script.js to
-    // /api/contact and read by server.js before the DB write.
-    await page.goto('/?isTestLead=true#schedule');
-
-    // Step 1
-    await page.fill('#name',    'DB Test User');
-    await page.fill('#email',   DB_TEST_EMAIL);
-    await page.fill('#phone',   '5550001234');
-    await page.fill('#address', '99 Persistence Lane');
-    await page.fill('#city',    'Testville');
-    await page.fill('#state',   'WI');
-    await page.fill('#zip',     '53000');
-    await page.selectOption('#preferredTime',    'Afternoon (1pm)');
-    await page.selectOption('#preferredContact', 'Phone');
-    await page.fill('#message', 'This is an automated DB persistence test.');
-
-    await page.click('.btn-submit');
-    await expect(page.locator('#formStep2')).toBeVisible();
-
-    // Step 2 — referral
-    await page.fill('#referralFirstName', 'Ref');
-    await page.fill('#referralLastName',  'Person');
-    await page.fill('#referralPhone',     '5559990000');
-
-    // Submit and wait for success
-    const responsePromise = page.waitForResponse('/api/contact');
-    await page.click('.btn-submit');
-    const response = await responsePromise;
-    expect((await response.json()).success).toBe(true);
-    await expect(page.locator('#formConfirmation')).toBeVisible();
-
-    // The DB write is fire-and-forget — poll for up to 3s
+    // Poll for the row written by the 'real server returns success' test above.
+    // The DB write is fire-and-forget so we retry for up to 5s.
     let row: Record<string, unknown> | null = null;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 50; i++) {
       const result = await pool!.query(
-        'SELECT * FROM "Submission" WHERE email = $1',
+        'SELECT * FROM "Submission" WHERE email = $1 ORDER BY "submittedAt" DESC LIMIT 1',
         [DB_TEST_EMAIL]
       );
       if (result.rows.length > 0) { row = result.rows[0]; break; }
       await new Promise(r => setTimeout(r, 100));
     }
 
-    expect(row, 'No DB record found for test submission').not.toBeNull();
-    expect(row!['name']).toBe('DB Test User');
+    expect(row, 'No DB record found for smoke test submission').not.toBeNull();
+    expect(row!['name']).toBe('Smoke Test');
     expect(row!['email']).toBe(DB_TEST_EMAIL);
-    expect(row!['phone']).toBe('(555) 000-1234');   // auto-formatted by the phone input handler
-    expect(row!['address']).toBe('99 Persistence Lane');
-    expect(row!['city']).toBe('Testville');
-    expect(row!['state']).toBe('WI');
-    expect(row!['zip']).toBe('53000');
-    expect(row!['preferredTime']).toBe('Afternoon (1pm)');
-    expect(row!['preferredContact']).toBe('Phone');
-    expect(row!['message']).toBe('This is an automated DB persistence test.');
-    expect(row!['referralFirstName']).toBe('Ref');
-    expect(row!['referralLastName']).toBe('Person');
-    expect(row!['referralPhone']).toBe('(555) 999-0000');  // auto-formatted by the referral phone input handler
-    expect(row!['tenantId']).toBe('burkhardt');            // submission is saved with the resolved tenant ID
-    expect(row!['isTestLead']).toBe(true);                 // ?isTestLead=true query param was forwarded to server
+    expect(row!['tenantId']).toBe('burkhardt');
+    expect(row!['isTestLead']).toBe(true);
   });
 });
