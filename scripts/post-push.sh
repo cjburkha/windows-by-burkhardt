@@ -50,6 +50,7 @@ echo ""
   # then retry download for up to 90s total
   echo "    Waiting for artifact upload to complete..."
   sleep 15
+  rm -rf playwright-report
   for i in $(seq 1 12); do
     gh run download "$RUN_ID" -n playwright-report -D playwright-report 2>/dev/null && break
     echo "    Waiting for artifact to be available (attempt $i/12)..."
