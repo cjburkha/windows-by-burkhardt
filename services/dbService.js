@@ -52,6 +52,7 @@ async function saveSubmission(data) {
       referralLastName:  data.referralLastName  || null,
       referralPhone:     data.referralPhone     || null,
       tenantId:          data.tenantId          || 'burkhardt',
+      isTestLead:        data.isTestLead        === true,
     },
   });
 }

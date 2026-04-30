@@ -261,6 +261,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
           referralFirstName, referralLastName, referralPhone,
           fbp, fbc, eventId } = req.body;
+    const isTestLead = req.query.isTestLead === 'true';
 
     // Honeypot — bots fill hidden fields, humans never see them
     if (req.body.website) {
@@ -342,7 +343,8 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
         name, email, phone, address, city, state, zip,
         preferredDate, preferredTime, preferredContact, message,
         referralFirstName, referralLastName, referralPhone,
-        tenantId: tenant.id
+        tenantId: tenant.id,
+        isTestLead,
       }).catch(err => console.error('DB save failed:', err.message));
 
       res.json({ 

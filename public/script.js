@@ -131,7 +131,9 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const response = await fetch('/api/contact', {
+            const searchParams = new URLSearchParams(window.location.search);
+            const testParam = searchParams.get('isTestLead') === 'true' ? '?isTestLead=true' : '';
+            const response = await fetch(`/api/contact${testParam}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)

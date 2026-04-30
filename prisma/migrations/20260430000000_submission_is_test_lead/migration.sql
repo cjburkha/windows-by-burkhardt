@@ -1,0 +1,1 @@
+ALTER TABLE "Submission" ADD COLUMN "isTestLead" BOOLEAN NOT NULL DEFAULT false;

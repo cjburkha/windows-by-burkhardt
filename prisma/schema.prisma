@@ -57,4 +57,8 @@ model Submission {
   referralFirstName String?
   referralLastName  String?
   referralPhone     String?
+
+  // Test lead flag — set via ?isTestLead=true query param so smoke tests
+  // can be filtered out of real lead reports.
+  isTestLead        Boolean  @default(false)
 }
