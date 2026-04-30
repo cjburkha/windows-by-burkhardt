@@ -108,6 +108,16 @@ test.describe('Full form submission', () => {
   test('all fields filled — complete two-step flow with email preview', async ({ page }) => {
     await page.goto('/#schedule');
 
+    // Mock the API so this test works identically in local dev, CI, and prod smoke runs.
+    // The real-server submission is covered by the DB persistence test.
+    await page.route('/api/contact', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'Your consultation request has been submitted successfully!' }),
+      })
+    );
+
     // Step 1: fill every field
     await page.fill('#name', 'Chris Burkhardt');
     await page.fill('#email', 'chris@example.com');
