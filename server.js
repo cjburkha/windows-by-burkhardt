@@ -8,8 +8,9 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const validator = require('validator');
 const xss = require('xss');
-const emailService = require('./services/emailService');
-const dbService    = require('./services/dbService');
+const emailService        = require('./services/emailService');
+const dbService           = require('./services/dbService');
+const metaConversions     = require('./services/metaConversionsService');
 
 // ── Tenant registry ──────────────────────────────────────────────────────────────────
 // Tenants are loaded from the DB at startup and held in memory.
@@ -270,7 +271,8 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
     const tenant = resolveTenant(req);
     let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
-          referralFirstName, referralLastName, referralPhone } = req.body;
+          referralFirstName, referralLastName, referralPhone,
+          fbp, fbc, eventId } = req.body;
 
     // Honeypot — bots fill hidden fields, humans never see them
     if (req.body.website) {
@@ -335,6 +337,20 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       emailService.sendConfirmation({
         name, email, preferredDate, preferredTime
       }, tenant).catch(err => console.error('Confirmation email failed:', err.message));
+
+      // Meta Conversions API — non-blocking server-side conversion event.
+      // Deduplicates with the browser pixel via shared eventId.
+      const forwarded2 = req.headers['x-forwarded-for'];
+      const clientIp   = forwarded2 ? forwarded2.split(',')[0].trim() : req.ip;
+      metaConversions.sendScheduleEvent({
+        name, email, phone, city, state, zip,
+        clientIp,
+        userAgent: req.headers['user-agent'],
+        fbp: typeof fbp === 'string' ? fbp : undefined,
+        fbc: typeof fbc === 'string' ? fbc : undefined,
+        eventId: typeof eventId === 'string' ? eventId : undefined,
+        eventSourceUrl: `https://${req.hostname}/`,
+      }).catch(err => console.error('Meta CAPI failed:', err.message));
 
       // Save to database — non-blocking. A DB failure logs but never fails the response.
       dbService.saveSubmission({

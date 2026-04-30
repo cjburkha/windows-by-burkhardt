@@ -90,6 +90,25 @@ document.addEventListener('DOMContentLoaded', function() {
         formMessage.className = 'form-message';
         formMessage.style.display = 'none';
 
+        // ── Meta CAPI deduplication ───────────────────────────────────────
+        // Generate a unique event ID shared with the browser pixel so Meta
+        // counts the conversion once even though it arrives from two sources.
+        const eventId = 'wbb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+
+        // Read Meta cookies set by fbevents.js — sent to the server so CAPI
+        // can include them for better match quality.
+        function getCookie(name) {
+            const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+            return match ? decodeURIComponent(match[1]) : undefined;
+        }
+        const fbp = getCookie('_fbp');
+        const fbc = getCookie('_fbc');
+
+        // Fire browser pixel Schedule event with the same event_id
+        if (typeof fbq === 'function') {
+            fbq('track', 'Schedule', { content_name: 'Free Window Consultation' }, { eventID: eventId });
+        }
+
         const formData = {
             name: document.getElementById('name').value,
             email: document.getElementById('email').value,
@@ -104,7 +123,11 @@ document.addEventListener('DOMContentLoaded', function() {
             message: document.getElementById('message').value,
             referralFirstName: document.getElementById('referralFirstName').value,
             referralLastName: document.getElementById('referralLastName').value,
-            referralPhone: document.getElementById('referralPhone').value
+            referralPhone: document.getElementById('referralPhone').value,
+            // Meta CAPI deduplication fields
+            eventId,
+            ...(fbp && { fbp }),
+            ...(fbc && { fbc }),
         };
 
         try {
