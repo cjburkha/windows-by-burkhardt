@@ -295,7 +295,7 @@ test.describe('Database persistence', () => {
     }
   });
 
-  test('real submission is saved to DB with isTestLead=true (no mock)', async ({ page }) => {
+  test('real submission is saved to DB with isTestLead=true', async ({ page }) => {
     if (!pool) {
       test.skip(true, 'DATABASE_URL not set — skipping DB persistence test');
       return;
