@@ -295,7 +295,7 @@ test.describe('Database persistence', () => {
     }
   });
 
-  test('real submission is saved to DB with isTestLead=true', async ({ page }) => {
+  test('real submission sends email and is saved to DB', async ({ page }) => {
     if (!pool) {
       test.skip(true, 'DATABASE_URL not set — skipping DB persistence test');
       return;
@@ -304,6 +304,8 @@ test.describe('Database persistence', () => {
     // Delete any leftover row from a previous run so the poll below is unambiguous
     await pool!.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
 
+    // ?isTestLead=true marks the DB row as a test submission (filterable in reports)
+    // but the full SES + CAPI flow still runs — this verifies real email delivery.
     await page.goto('/?isTestLead=true#schedule');
     await page.fill('#name',  'Smoke Test');
     await page.fill('#email', DB_TEST_EMAIL);
