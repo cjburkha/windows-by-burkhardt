@@ -88,19 +88,7 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet({
   // Allow GA4 to receive the referrer so traffic sources are tracked correctly
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://wbb-static-prod.s3.us-east-1.amazonaws.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "https://www.googletagmanager.com", "https://wbb-static-prod.s3.us-east-1.amazonaws.com", "https://connect.facebook.net"],
-      imgSrc: ["'self'", "data:", "https://www.google-analytics.com", "https://www.facebook.com"],
-      connectSrc: ["'self'", "https://www.google-analytics.com", "https://analytics.google.com", "https://region1.google-analytics.com", "https://stats.g.doubleclick.net", "https://www.facebook.com"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-      baseUri: ["'self'"]
-    }
-  }
+  contentSecurityPolicy: false,
 }));
 app.use(cors({
   origin: function(origin, callback) {
@@ -343,11 +331,8 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       const forwarded2 = req.headers['x-forwarded-for'];
       const clientIp   = forwarded2 ? forwarded2.split(',')[0].trim() : req.ip;
       metaConversions.sendScheduleEvent({
-        name, email, phone, city, state, zip,
-        clientIp,
+        name, email, phone, city, zip,
         userAgent: req.headers['user-agent'],
-        fbp: typeof fbp === 'string' ? fbp : undefined,
-        fbc: typeof fbc === 'string' ? fbc : undefined,
         eventId: typeof eventId === 'string' ? eventId : undefined,
         eventSourceUrl: `https://${req.hostname}/`,
       }).catch(err => console.error('Meta CAPI failed:', err.message));

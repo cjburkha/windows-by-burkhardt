@@ -57,12 +57,8 @@ function hashPhone(value) {
  * @param {string}  params.email             - Email from form
  * @param {string}  params.phone             - Phone from form
  * @param {string}  [params.city]
- * @param {string}  [params.state]
  * @param {string}  [params.zip]
- * @param {string}  [params.clientIp]        - Forwarded client IP
  * @param {string}  [params.userAgent]       - Browser User-Agent header
- * @param {string}  [params.fbp]             - _fbp cookie value (browser ID)
- * @param {string}  [params.fbc]             - _fbc cookie value (click ID)
  * @param {string}  [params.eventId]         - Unique ID shared with browser pixel for dedup
  * @param {string}  [params.eventSourceUrl]  - Full page URL where the form lives
  */
@@ -74,8 +70,8 @@ async function sendScheduleEvent(params) {
   }
 
   const {
-    name, email, phone, city, state, zip,
-    clientIp, userAgent, fbp, fbc, eventId,
+    name, email, phone, city, zip,
+    userAgent, eventId,
     eventSourceUrl = 'https://windowsbyburkhardt.com/'
   } = params;
 
@@ -91,14 +87,9 @@ async function sendScheduleEvent(params) {
     fn: hash(firstName),
     ln: hash(lastName),
     ct: hash(city),
-    st: hash(state),
     zp: hash(zip),
-    country: hash('us'),
-    // Unhashed — browser-sourced identifiers
-    ...(clientIp  && { client_ip_address: clientIp }),
+    // Unhashed — browser-sourced
     ...(userAgent && { client_user_agent: userAgent }),
-    ...(fbp       && { fbp }),
-    ...(fbc       && { fbc }),
   };
 
   // Remove null values — Meta rejects null hashes
