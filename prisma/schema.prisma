@@ -22,6 +22,7 @@ model Tenant {
   recipientEmail String
   ccEmail        String?
   ga4Id          String
+  pixelId        String?
   active         Boolean      @default(true)
   submissions    Submission[]
 }

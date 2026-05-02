@@ -34,6 +34,7 @@ const FALLBACK_TENANTS = {
     fromEmail:      'noreply@windowsbyburkhardt.com',
     recipientEmail: 'chris.burkhardt@live.com',
     ga4Id:          'G-2CC9WZ2Q8V',
+    pixelId:        '1758018128507730',
   },
   'windowsbyjose.com': {
     id:             'jose',
@@ -45,6 +46,7 @@ const FALLBACK_TENANTS = {
     recipientEmail: 'jose.martinez@apexenergygroup.com',
     ccEmail:        'chris.burkhardt@live.com',
     ga4Id:          'G-LCG2HZB0GD',
+    pixelId:        null,  // no Meta pixel for this tenant yet
   },
 };
 
@@ -217,10 +219,14 @@ async function renderPage(page, tenant) {
     .replace(/\{\{TENANT_BRAND_NAME\}\}/g,            tenant.brandName)
     .replace(/\{\{TENANT_FAVICON\}\}/g,               tenant.favicon || '/favicon.svg')
     .replace(/\{\{TENANT_GA4_ID\}\}/g,                tenant.ga4Id || '')
+    .replace(/\{\{TENANT_PIXEL_ID\}\}/g,              tenant.pixelId || '')
     .replace(/\{\{TENANT_RECIPIENT_EMAIL_ENCODED\}\}/g, encodedEmail)
     .replace(/\{\{TENANT_RECIPIENT_EMAIL\}\}/g,       tenant.recipientEmail || '');
   if (!tenant.ga4Id) {
     html = html.replace(/<script[^>]*googletagmanager\.com[^>]*><\/script>\n?/g, '');
+  }
+  if (!tenant.pixelId) {
+    html = html.replace(/<!-- Meta Pixel Code -->[\s\S]*?<!-- End Meta Pixel Code -->\n?/g, '');
   }
   return html;
 }
@@ -230,10 +236,14 @@ function renderHtml(tenant) {
     .replace(/\{\{TENANT_BRAND_NAME\}\}/g, tenant.brandName)
     .replace(/\{\{TENANT_HEADLINE\}\}/g,    tenant.headline)
     .replace(/\{\{TENANT_FAVICON\}\}/g,     tenant.favicon || '/favicon.svg')
-    .replace(/\{\{TENANT_GA4_ID\}\}/g,      tenant.ga4Id || '');
-  // Strip the gtag loader script entirely when no GA4 ID is configured
+    .replace(/\{\{TENANT_GA4_ID\}\}/g,      tenant.ga4Id || '')
+    .replace(/\{\{TENANT_PIXEL_ID\}\}/g,    tenant.pixelId || '');
+  // Strip tracking scripts entirely when not configured for this tenant
   if (!tenant.ga4Id) {
     html = html.replace(/<script[^>]*googletagmanager\.com[^>]*><\/script>\n?/g, '');
+  }
+  if (!tenant.pixelId) {
+    html = html.replace(/<!-- Meta Pixel Code -->[\s\S]*?<!-- End Meta Pixel Code -->\n?/g, '');
   }
   return html;
 }
@@ -339,6 +349,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       // Meta Conversions API — non-blocking server-side conversion event.
       // Deduplicates with the browser pixel via shared eventId.
       metaConversions.sendScheduleEvent({
+        pixelId: tenant.pixelId,
         name, email, phone, city, zip,
         userAgent: req.headers['user-agent'],
         eventId: typeof eventId === 'string' ? eventId : undefined,

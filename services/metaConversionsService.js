@@ -20,11 +20,9 @@
 
 const crypto = require('crypto');
 
-const PIXEL_ID   = process.env.META_PIXEL_ID;
 const CAPI_TOKEN = process.env.META_CAPI_TOKEN;
 const TEST_CODE  = process.env.META_CAPI_TEST_CODE; // optional — for local/staging testing
 const GRAPH_API_VERSION = 'v20.0';
-const CAPI_URL   = `https://graph.facebook.com/${GRAPH_API_VERSION}/${PIXEL_ID}/events`;
 
 /**
  * Normalise then SHA-256 hash a string, returning the hex digest.
@@ -53,6 +51,7 @@ function hashPhone(value) {
  * Send a `Schedule` conversion event to the Meta Conversions API.
  *
  * @param {object} params
+ * @param {string}  params.pixelId            - Tenant's Meta Pixel ID
  * @param {string}  params.name              - Full name from form
  * @param {string}  params.email             - Email from form
  * @param {string}  params.phone             - Phone from form
@@ -63,11 +62,14 @@ function hashPhone(value) {
  * @param {string}  [params.eventSourceUrl]  - Full page URL where the form lives
  */
 async function sendScheduleEvent(params) {
-  if (!PIXEL_ID || !CAPI_TOKEN) {
-    // Silently skip — env not configured (e.g. CI runs, tests)
-    console.log('[MetaCAPI] Skipped: META_PIXEL_ID or META_CAPI_TOKEN not set');
+  const { pixelId } = params;
+  if (!pixelId || !CAPI_TOKEN) {
+    // Silently skip — pixel not configured for this tenant, or CAPI token missing
+    console.log(`[MetaCAPI] Skipped: ${!pixelId ? 'no pixelId for tenant' : 'META_CAPI_TOKEN not set'}`);
     return;
   }
+
+  const capiUrl = `https://graph.facebook.com/${GRAPH_API_VERSION}/${pixelId}/events`;
 
   const {
     name, email, phone, city, zip,
@@ -118,7 +120,7 @@ async function sendScheduleEvent(params) {
   };
 
   try {
-    const response = await fetch(`${CAPI_URL}?access_token=${CAPI_TOKEN}`, {
+    const response = await fetch(`${capiUrl}?access_token=${CAPI_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

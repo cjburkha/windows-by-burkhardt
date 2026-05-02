@@ -4,8 +4,7 @@
 //
 // Hooks installed:
 //   pre-commit  → scripts/pre-commit.sh  (runs unit tests before every commit)
-//
-// UI tests (Playwright) are NOT run locally — they run in CI on push to develop.
+//   post-push   → scripts/post-push.sh   (watches GH Actions run, opens Playwright report)
 
 const fs = require('fs');
 const path = require('path');
@@ -19,6 +18,7 @@ if (!fs.existsSync(hooksDir)) {
 
 const hooks = [
   { src: 'pre-commit.sh', dst: 'pre-commit' },
+  { src: 'post-push.sh',  dst: 'post-push' },
 ];
 
 for (const { src, dst } of hooks) {
