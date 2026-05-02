@@ -293,18 +293,20 @@ test.describe('Database persistence', () => {
     const submission = {
       name:             'Smoke Test',
       email:            DB_TEST_EMAIL,
-      phone:            '5550000000',
+      phone:            '5550000000',      // typed digits — browser formats to (555) 000-0000
+      phoneFmt:         '(555) 000-0000',  // what the DB receives after browser auto-format
       address:          '123 Test Lane',
       city:             'Milwaukee',
       state:            'WI',
       zip:              '53202',
-      preferredDate:    '2099-12-31',        // far future — won't conflict with real bookings
+      preferredDate:    '2099-12-31',
       preferredTime:    'Morning (9am)',
       preferredContact: 'Email',
       message:          'Automated smoke test — please ignore.',
       referralFirstName: 'Jane',
       referralLastName:  'Doe',
-      referralPhone:    '5559999999',
+      referralPhone:    '5559999999',      // typed digits — browser formats to (555) 999-9999
+      referralPhoneFmt: '(555) 999-9999',
     };
 
     // ?isTestLead=true flags the row in the DB for easy filtering — full server path runs unchanged
@@ -357,7 +359,7 @@ test.describe('Database persistence', () => {
     // Verify every submitted field is stored correctly
     expect(row!['name']).toBe(submission.name);
     expect(row!['email']).toBe(submission.email);
-    expect(row!['phone']).toBe(submission.phone);
+    expect(row!['phone']).toBe(submission.phoneFmt);
     expect(row!['address']).toBe(submission.address);
     expect(row!['city']).toBe(submission.city);
     expect(row!['state']).toBe(submission.state);
@@ -368,7 +370,7 @@ test.describe('Database persistence', () => {
     expect(row!['message']).toBe(submission.message);
     expect(row!['referralFirstName']).toBe(submission.referralFirstName);
     expect(row!['referralLastName']).toBe(submission.referralLastName);
-    expect(row!['referralPhone']).toBe(submission.referralPhone);
+    expect(row!['referralPhone']).toBe(submission.referralPhoneFmt);
     expect(row!['tenantId']).toBe('burkhardt');
     expect(row!['isTestLead']).toBe(true);
   });
