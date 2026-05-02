@@ -285,14 +285,10 @@ test.describe('Database persistence', () => {
   });
 
   test.afterAll(async () => {
-    await pool.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
     await pool.end();
   });
 
   test('form submission creates a DB record', async ({ page }) => {
-    // Delete any leftover row so the poll below is unambiguous
-    await pool.query('DELETE FROM "Submission" WHERE email = $1', [DB_TEST_EMAIL]);
-
     // Navigate to the live site — ?isTestLead=true flags the row as a test lead
     // so it stays filterable in the DB, but the full server path runs unchanged.
     await page.goto('/?isTestLead=true#schedule');
@@ -316,11 +312,13 @@ test.describe('Database persistence', () => {
     await expect(page.locator('#formConfirmation')).toBeVisible();
 
     // DB write is fire-and-forget in the server — poll up to 10s for the row
+    // Only look for rows created in the last 60s so old test records don't interfere
+    const since = new Date(Date.now() - 60_000).toISOString();
     let row: Record<string, unknown> | null = null;
     for (let i = 0; i < 100; i++) {
       const result = await pool.query(
-        'SELECT * FROM "Submission" WHERE email = $1 ORDER BY "submittedAt" DESC LIMIT 1',
-        [DB_TEST_EMAIL]
+        'SELECT * FROM "Submission" WHERE email = $1 AND "submittedAt" > $2 ORDER BY "submittedAt" DESC LIMIT 1',
+        [DB_TEST_EMAIL, since]
       );
       if (result.rows.length > 0) { row = result.rows[0]; break; }
       await new Promise(r => setTimeout(r, 100));
