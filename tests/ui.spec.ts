@@ -288,31 +288,59 @@ test.describe('Database persistence', () => {
     await pool.end();
   });
 
-  test('form submission creates a DB record', async ({ page }) => {
-    // Navigate to the live site — ?isTestLead=true flags the row as a test lead
-    // so it stays filterable in the DB, but the full server path runs unchanged.
+  test('form submission saves all fields to DB', async ({ page }) => {
+    // All field values we will submit and later verify in the DB
+    const submission = {
+      name:             'Smoke Test',
+      email:            DB_TEST_EMAIL,
+      phone:            '5550000000',
+      address:          '123 Test Lane',
+      city:             'Milwaukee',
+      state:            'WI',
+      zip:              '53202',
+      preferredDate:    '2099-12-31',        // far future — won't conflict with real bookings
+      preferredTime:    'Morning (9am)',
+      preferredContact: 'Email',
+      message:          'Automated smoke test — please ignore.',
+      referralFirstName: 'Jane',
+      referralLastName:  'Doe',
+      referralPhone:    '5559999999',
+    };
+
+    // ?isTestLead=true flags the row in the DB for easy filtering — full server path runs unchanged
     await page.goto('/?isTestLead=true#schedule');
 
-    // Step 1: fill required fields and advance to step 2
-    await page.fill('#name',  'Smoke Test');
-    await page.fill('#email', DB_TEST_EMAIL);
-    await page.fill('#phone', '5550000000');
+    // Step 1 — all fields
+    await page.fill('#name',    submission.name);
+    await page.fill('#email',   submission.email);
+    await page.fill('#phone',   submission.phone);
+    await page.fill('#address', submission.address);
+    await page.fill('#city',    submission.city);
+    await page.fill('#state',   submission.state);
+    await page.fill('#zip',     submission.zip);
+    await page.fill('#preferredDate', submission.preferredDate);
+    await page.selectOption('#preferredTime',    submission.preferredTime);
+    await page.selectOption('#preferredContact', submission.preferredContact);
+    await page.fill('#message', submission.message);
     await page.click('.btn-submit');
 
-    // Step 2 referral panel should appear; then click Complete to fire the API call
+    // Step 2 — referral fields
     await expect(page.locator('#formStep2')).toBeVisible();
+    await page.fill('#referralFirstName', submission.referralFirstName);
+    await page.fill('#referralLastName',  submission.referralLastName);
+    await page.fill('#referralPhone',     submission.referralPhone);
+
+    // Capture API response before clicking Complete
     const responsePromise = page.waitForResponse(r => r.url().includes('/api/contact'));
     await page.click('.btn-submit');
     const response = await responsePromise;
     const body = await response.json();
 
     expect(body.success, `API returned success=false: ${JSON.stringify(body)}`).toBe(true);
-
-    // Confirmation panel proves the browser-side flow completed
     await expect(page.locator('#formConfirmation')).toBeVisible();
 
-    // DB write is fire-and-forget in the server — poll up to 10s for the row
-    // Only look for rows created in the last 60s so old test records don't interfere
+    // DB write is fire-and-forget — poll up to 10s for the new row.
+    // "submittedAt > since" ensures we match only this run, not leftover rows from prior runs.
     const since = new Date(Date.now() - 60_000).toISOString();
     let row: Record<string, unknown> | null = null;
     for (let i = 0; i < 100; i++) {
@@ -324,9 +352,23 @@ test.describe('Database persistence', () => {
       await new Promise(r => setTimeout(r, 100));
     }
 
-    expect(row, 'No DB record found — the server did not persist the submission').not.toBeNull();
-    expect(row!['name']).toBe('Smoke Test');
-    expect(row!['email']).toBe(DB_TEST_EMAIL);
+    expect(row, 'No DB record found — server did not persist the submission').not.toBeNull();
+
+    // Verify every submitted field is stored correctly
+    expect(row!['name']).toBe(submission.name);
+    expect(row!['email']).toBe(submission.email);
+    expect(row!['phone']).toBe(submission.phone);
+    expect(row!['address']).toBe(submission.address);
+    expect(row!['city']).toBe(submission.city);
+    expect(row!['state']).toBe(submission.state);
+    expect(row!['zip']).toBe(submission.zip);
+    expect(row!['preferredDate']).toBe(submission.preferredDate);
+    expect(row!['preferredTime']).toBe(submission.preferredTime);
+    expect(row!['preferredContact']).toBe(submission.preferredContact);
+    expect(row!['message']).toBe(submission.message);
+    expect(row!['referralFirstName']).toBe(submission.referralFirstName);
+    expect(row!['referralLastName']).toBe(submission.referralLastName);
+    expect(row!['referralPhone']).toBe(submission.referralPhone);
     expect(row!['tenantId']).toBe('burkhardt');
     expect(row!['isTestLead']).toBe(true);
   });
