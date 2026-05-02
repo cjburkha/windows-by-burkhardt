@@ -40,17 +40,23 @@ SHA="$(git rev-parse HEAD)"
     echo "╚══════════════════════════════════════════════════════════╝"
     echo ""
     # Print just the failure section — strip GitHub log prefixes and timestamps
-    gh run view "$RUN_ID" --log-failed 2>&1 \
+    FAIL_LOG=$(gh run view "$RUN_ID" --log-failed 2>&1 \
       | sed 's/^[^\t]*\t[^\t]*\t//' \
       | grep -v "^##\[" \
       | grep -v "^shell:\|^env:" \
       | sed '/^[[:space:]]*$/d' \
       | grep -A 40 "Error:\|FAILED\|✘\|expect(\|\[ERROR\]" \
-      | head -80
+      | head -80)
+    echo "$FAIL_LOG"
     echo ""
     echo "  Full log:    gh run view $RUN_ID --log-failed"
     echo "  All runs:    gh run list --limit 5"
     echo ""
+    # macOS banner notification — visible regardless of which app is in focus
+    FIRST_ERROR=$(echo "$FAIL_LOG" | grep -m1 "Error:\|expect(" | sed 's/^ *//' | cut -c1-80)
+    osascript -e "display notification \"${FIRST_ERROR:-Check terminal for details}\" with title \"❌ CI FAILED\" subtitle \"Smoke tests — run $RUN_ID\" sound name \"Basso\"" 2>/dev/null || true
+  else
+    osascript -e "display notification \"All smoke tests passed ✅\" with title \"CI PASSED\" subtitle \"$(git log -1 --pretty=%s HEAD 2>/dev/null | cut -c1-60)\" sound name \"Glass\"" 2>/dev/null || true
   fi
 
   # Artifact upload happens after the job completes — give GitHub 15s head start
@@ -73,6 +79,9 @@ SHA="$(git rev-parse HEAD)"
     fi
   else
     echo "⚠️  No Playwright report artifact found for run $RUN_ID."
+    if [ $EXIT -ne 0 ]; then
+      osascript -e "display notification \"Report artifact missing — check gh run view $RUN_ID\" with title \"❌ CI FAILED\" sound name \"Basso\"" 2>/dev/null || true
+    fi
   fi
 ) &
 
