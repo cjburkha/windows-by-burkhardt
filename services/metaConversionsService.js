@@ -60,9 +60,10 @@ function hashPhone(value) {
  * @param {string}  [params.userAgent]       - Browser User-Agent header
  * @param {string}  [params.eventId]         - Unique ID shared with browser pixel for dedup
  * @param {string}  [params.eventSourceUrl]  - Full page URL where the form lives
+ * @param {string}  [params.fbclid]          - Facebook click ID from URL param (improves attribution)
  */
 async function sendScheduleEvent(params) {
-  const { pixelId } = params;
+  const { pixelId, fbclid } = params;
   if (!pixelId || !CAPI_TOKEN) {
     // Silently skip — pixel not configured for this tenant, or CAPI token missing
     console.log(`[MetaCAPI] Skipped: ${!pixelId ? 'no pixelId for tenant' : 'META_CAPI_TOKEN not set'}`);
@@ -76,6 +77,10 @@ async function sendScheduleEvent(params) {
     userAgent, eventId,
     eventSourceUrl = 'https://windowsbyburkhardt.com/'
   } = params;
+
+  // If fbclid is present, build fbc in Meta's required format: fb.1.<timestamp>.<fbclid>
+  // This is a strong attribution signal — use it even if _fbc cookie wasn't captured.
+  const fbcFromClick = fbclid ? `fb.1.${Math.floor(Date.now() / 1000)}.${fbclid}` : null;
 
   // Split full name into first / last for better match rates
   const nameParts = (name || '').trim().split(/\s+/);
@@ -92,6 +97,8 @@ async function sendScheduleEvent(params) {
     zp: hash(zip),
     // Unhashed — browser-sourced
     ...(userAgent && { client_user_agent: userAgent }),
+    // fbc: prefer fbclid-derived value (stronger signal) over cookie, omit if neither present
+    ...(fbcFromClick ? { fbc: fbcFromClick } : {}),
   };
 
   // Remove null values — Meta rejects null hashes

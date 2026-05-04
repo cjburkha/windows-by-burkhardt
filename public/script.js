@@ -1,4 +1,22 @@
 document.addEventListener('DOMContentLoaded', function() {
+
+    // ── Attribution capture ───────────────────────────────────────────────────
+    // Read UTM params and click IDs from the URL. If present, store them in
+    // localStorage so attribution survives navigation within the same session.
+    // URL params always win over stored values (last-click wins per session).
+    (function captureAttribution() {
+        var STORAGE_KEY = 'wbb_attribution';
+        var params = new URLSearchParams(window.location.search);
+        var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','fbclid','gclid'];
+        var fromUrl = {};
+        keys.forEach(function(k) { var v = params.get(k); if (v) fromUrl[k] = v; });
+        if (Object.keys(fromUrl).length > 0) {
+            // New attribution data in URL — overwrite stored values
+            fromUrl._ts = Date.now();
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(fromUrl)); } catch(e) {}
+        }
+    })();
+
     // ── Mobile nav toggle ─────────────────────────────────────────────────────
     const navToggle = document.getElementById('navToggle');
     const mainNav   = document.getElementById('mainNav');
@@ -129,6 +147,20 @@ document.addEventListener('DOMContentLoaded', function() {
             ...(fbp && { fbp }),
             ...(fbc && { fbc }),
         };
+
+        // ── Attribution ───────────────────────────────────────────────────────
+        // Read stored attribution from localStorage and include in payload.
+        try {
+            var attr = JSON.parse(localStorage.getItem('wbb_attribution') || '{}');
+            if (attr.utm_source)   formData.utmSource   = attr.utm_source;
+            if (attr.utm_medium)   formData.utmMedium   = attr.utm_medium;
+            if (attr.utm_campaign) formData.utmCampaign = attr.utm_campaign;
+            if (attr.utm_content)  formData.utmContent  = attr.utm_content;
+            if (attr.utm_term)     formData.utmTerm     = attr.utm_term;
+            if (attr.fbclid)       formData.fbclid      = attr.fbclid;
+            if (attr.gclid)        formData.gclid       = attr.gclid;
+        } catch(e) {}
+
 
         try {
             const searchParams = new URLSearchParams(window.location.search);

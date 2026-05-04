@@ -53,6 +53,14 @@ async function saveSubmission(data) {
       referralPhone:     data.referralPhone     || null,
       tenantId:          data.tenantId          || 'burkhardt',
       isTestLead:        data.isTestLead        === true,
+      // Attribution
+      utmSource:         data.utmSource         || null,
+      utmMedium:         data.utmMedium         || null,
+      utmCampaign:       data.utmCampaign        || null,
+      utmContent:        data.utmContent         || null,
+      utmTerm:           data.utmTerm            || null,
+      fbclid:            data.fbclid             || null,
+      gclid:             data.gclid              || null,
     },
   });
 }

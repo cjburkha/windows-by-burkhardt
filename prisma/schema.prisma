@@ -62,4 +62,15 @@ model Submission {
   // Test lead flag — set via ?isTestLead=true query param so smoke tests
   // can be filtered out of real lead reports.
   isTestLead        Boolean  @default(false)
+
+  // Attribution — populated from URL params on form submit.
+  // UTMs are set manually on ad/email destination URLs; click IDs are auto-appended by the platform.
+  // Stored on first touch (URL param wins over localStorage) so the source that drove the visit is credited.
+  utmSource    String?   // utm_source=facebook | google | email | instagram
+  utmMedium    String?   // utm_medium=paid | cpc | email | organic
+  utmCampaign  String?   // utm_campaign=spring-windows-2026
+  utmContent   String?   // utm_content=carousel-ad-v2  (A/B variant tracking)
+  utmTerm      String?   // utm_term=replacement+windows (paid search keyword)
+  fbclid       String?   // Facebook click ID — auto-appended by FB Ads; improves CAPI match rate
+  gclid        String?   // Google click ID — auto-appended by Google Ads
 }

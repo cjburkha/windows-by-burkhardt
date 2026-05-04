@@ -275,7 +275,8 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     const tenant = resolveTenant(req);
     let { name, email, phone, address, city, state, zip, preferredDate, preferredTime, preferredContact, message,
           referralFirstName, referralLastName, referralPhone,
-          fbp, fbc, eventId } = req.body;
+          fbp, fbc, eventId,
+          utmSource, utmMedium, utmCampaign, utmContent, utmTerm, fbclid, gclid } = req.body;
     const isTestLead = req.query.isTestLead === 'true';
 
     // Honeypot — bots fill hidden fields, humans never see them
@@ -327,6 +328,15 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     referralLastName  = referralLastName  ? xss(validator.trim(referralLastName)).substring(0, 100)  : '';
     referralPhone     = referralPhone     ? validator.trim(referralPhone).replace(/[^\d\s\-()+.]/g, '').substring(0, 20) : '';
 
+    // Sanitize attribution fields — plain strings, max 500 chars each
+    utmSource   = utmSource   ? validator.trim(String(utmSource)).substring(0, 100)   : null;
+    utmMedium   = utmMedium   ? validator.trim(String(utmMedium)).substring(0, 100)   : null;
+    utmCampaign = utmCampaign ? validator.trim(String(utmCampaign)).substring(0, 200) : null;
+    utmContent  = utmContent  ? validator.trim(String(utmContent)).substring(0, 200)  : null;
+    utmTerm     = utmTerm     ? validator.trim(String(utmTerm)).substring(0, 200)     : null;
+    fbclid      = fbclid      ? validator.trim(String(fbclid)).substring(0, 500)      : null;
+    gclid       = gclid       ? validator.trim(String(gclid)).substring(0, 500)       : null;
+
     // Validate date is a real future date if provided
     if (preferredDate) {
       if (!validator.isDate(preferredDate) || new Date(preferredDate) < new Date()) {
@@ -354,6 +364,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
         userAgent: req.headers['user-agent'],
         eventId: typeof eventId === 'string' ? eventId : undefined,
         eventSourceUrl: `https://${req.hostname}/`,
+        fbclid: typeof fbclid === 'string' ? fbclid : undefined,
       }).catch(err => console.error('Meta CAPI failed:', err.message));
 
       // Save to database — non-blocking. A DB failure logs but never fails the response.
@@ -363,6 +374,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
         referralFirstName, referralLastName, referralPhone,
         tenantId: tenant.id,
         isTestLead,
+        utmSource, utmMedium, utmCampaign, utmContent, utmTerm, fbclid, gclid,
       }).catch(err => console.error('DB save failed:', err.message));
 
       res.json({ 
