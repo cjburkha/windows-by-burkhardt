@@ -1250,3 +1250,64 @@ footer {
         gap: 16px;
     }
 }
+
+/* SMS opt-in page */
+.sms-consent-block {
+    margin: 24px 0 8px;
+    padding: 18px 20px;
+    border: 2px solid #c9b37a;
+    border-radius: 6px;
+    background: #fbf7ee;
+}
+.sms-consent-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #2a2a2a;
+}
+.sms-consent-label input[type="checkbox"] {
+    margin-top: 4px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.sms-consent-label a {
+    color: #6b5018;
+    text-decoration: underline;
+}
+.sms-disclosures {
+    margin: 18px 0 8px;
+    padding: 16px 20px;
+    background: #f5f3ee;
+    border-left: 4px solid #8a7146;
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #3a3a3a;
+}
+.sms-disclosures p {
+    margin: 4px 0;
+}
+.sms-alt-optin {
+    margin-top: 32px;
+    padding: 20px 24px;
+    background: #ffffff;
+    border: 1px solid #d8d2c4;
+    border-radius: 6px;
+    text-align: center;
+    font-family: 'Merriweather Sans', sans-serif;
+}
+.sms-alt-optin h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    color: #2a2a2a;
+}
+.sms-alt-optin p {
+    margin: 0;
+    color: #444;
+}

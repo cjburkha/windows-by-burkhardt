@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Updates Signup &mdash; {{TENANT_BRAND_NAME}}</title>
+    <meta name="description" content="Sign up to receive appointment reminders and follow-up text messages from {{TENANT_BRAND_NAME}}.">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Merriweather+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{{TENANT_FAVICON}}">
+    <meta name="wbb-ga4-id" content="{{TENANT_GA4_ID}}">
+    <link rel="stylesheet" href="styles.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{TENANT_GA4_ID}}"></script>
+    <script src="analytics.js"></script>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <div class="brand-primary">
+                <a href="/" class="brand-name">{{TENANT_BRAND_NAME}}</a>
+                <span class="brand-divider"></span>
+                <span class="brand-sub">An <strong>Apex Energy Group</strong> Partner</span>
+            </div>
+            <nav id="mainNav">
+                <div class="nav-links" id="navLinks">
+                    <a href="/reviews" class="nav-link">Reviews</a>
+                    <a href="/gallery" class="nav-link">Gallery</a>
+                    <a href="/contact" class="nav-link">Contact</a>
+                </div>
+                <a href="/#schedule" class="nav-cta">Schedule Now</a>
+                <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-main">
+
+        <div class="page-hero">
+            <p class="hero-eyebrow">Stay in the Loop</p>
+            <h1>Text Message<br><em>Signup</em></h1>
+            <p class="page-hero-sub">Get appointment reminders and project follow-up by text from {{TENANT_BRAND_NAME}}.</p>
+        </div>
+
+        <section class="form-section" id="sms-signup">
+            <div class="form-container">
+
+                <div class="form-intro">
+                    <h2>What You&#8217;ll Receive</h2>
+                    <p>If you opt in below, {{TENANT_BRAND_NAME}} will send text messages to the phone number you provide about:</p>
+                    <ul>
+                        <li>Confirmation and reminders for your free in-home consultation</li>
+                        <li>Updates while your window project is in progress</li>
+                        <li>Occasional follow-up after installation</li>
+                    </ul>
+                </div>
+
+                <form id="smsSignupForm" class="consultation-form" novalidate>
+
+                    <!-- Honeypot -->
+                    <div style="position:absolute;left:-9999px;" aria-hidden="true">
+                        <input type="text" name="website" id="smsWebsite" tabindex="-1" autocomplete="off">
+                    </div>
+
+                    <div class="form-row">
+                        <input type="text" id="smsName" name="name" placeholder="Full Name *" required autocomplete="name">
+                    </div>
+
+                    <div class="form-row">
+                        <input type="tel" id="smsPhone" name="phone" placeholder="Mobile Phone Number *" required autocomplete="tel" pattern="[0-9\-\(\)\+\s]{10,}">
+                    </div>
+
+                    <div class="form-row">
+                        <input type="email" id="smsEmail" name="email" placeholder="Email Address (optional)" autocomplete="email">
+                    </div>
+
+                    <!-- REQUIRED: Compliant opt-in disclosure block -->
+                    <div class="sms-consent-block">
+                        <label class="sms-consent-label">
+                            <input type="checkbox" id="smsConsent" name="smsConsent" required>
+                            <span>
+                                Yes, I agree to receive recurring text messages from
+                                <strong>{{TENANT_BRAND_NAME}}</strong> at the mobile number above
+                                regarding my estimate, appointments, and follow-up. Message frequency
+                                varies. Message and data rates may apply. Reply <strong>HELP</strong>
+                                for help, <strong>STOP</strong> to cancel.
+                                See our <a href="/sms-terms">SMS Terms of Service</a> and
+                                <a href="/privacy">Privacy Policy</a>.
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="sms-disclosures">
+                        <p><strong>Program:</strong> {{TENANT_BRAND_NAME}} appointment &amp; follow-up texts.</p>
+                        <p><strong>Frequency:</strong> Message frequency varies (typically 1&ndash;4 messages per month).</p>
+                        <p><strong>Help:</strong> Text <strong>HELP</strong> to 1-855-612-7811 or email <a href="mailto:{{TENANT_RECIPIENT_EMAIL}}">{{TENANT_RECIPIENT_EMAIL_ENCODED}}</a>.</p>
+                        <p><strong>Opt-out:</strong> Text <strong>STOP</strong> to 1-855-612-7811 at any time to unsubscribe.</p>
+                        <p><strong>Cost:</strong> Message and data rates may apply.</p>
+                        <p><strong>Carriers:</strong> Carriers are not liable for delayed or undelivered messages.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <button type="submit" class="btn-submit">Subscribe to Text Updates</button>
+                        <p class="form-note">We will never share your phone number or text-message opt-in data with any third party for marketing or promotional purposes.</p>
+                    </div>
+
+                    <div id="smsFormConfirmation" class="form-confirmation" hidden>
+                        <h2>You&#8217;re subscribed.</h2>
+                        <p>You&#8217;ll receive a confirmation text from <strong>1-855-612-7811</strong> shortly. Reply <strong>STOP</strong> at any time to opt out.</p>
+                    </div>
+
+                    <div id="smsFormMessage" class="form-message" role="status"></div>
+                </form>
+
+                <div class="sms-alt-optin">
+                    <h3>Prefer to opt in by text?</h3>
+                    <p>Text the word <strong>JOIN</strong> to <strong>1-855-612-7811</strong> from your mobile phone. You&#8217;ll receive a confirmation message right away.</p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <p class="footer-name">{{TENANT_BRAND_NAME}}</p>
+                <p class="footer-partner">An Apex Energy Group Authorized Partner</p>
+            </div>
+            <div class="footer-links">
+                <a href="/#schedule">Schedule Consultation</a>
+                <a href="/reviews">Reviews</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/sms-terms">SMS Terms</a>
+                <a href="https://www.apexenergygroup.com" target="_blank" rel="noopener">Apex Energy Group</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 {{TENANT_BRAND_NAME}}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        (function () {
+            var form = document.getElementById('smsSignupForm');
+            var confirmation = document.getElementById('smsFormConfirmation');
+            var message = document.getElementById('smsFormMessage');
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                message.textContent = '';
+
+                if (document.getElementById('smsWebsite').value) return;
+
+                var name = document.getElementById('smsName').value.trim();
+                var phone = document.getElementById('smsPhone').value.trim();
+                var consent = document.getElementById('smsConsent').checked;
+
+                if (!name || !phone) {
+                    message.textContent = 'Please enter your name and mobile phone number.';
+                    return;
+                }
+                if (!consent) {
+                    message.textContent = 'Please check the consent box to subscribe.';
+                    return;
+                }
+
+                fetch('/api/sms-signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        phone: phone,
+                        email: document.getElementById('smsEmail').value.trim(),
+                        consent: true,
+                        consentText: document.querySelector('.sms-consent-label span').innerText,
+                        consentTimestamp: new Date().toISOString(),
+                        pageUrl: window.location.href
+                    })
+                }).catch(function () { /* backend not wired yet; ignore */ });
+
+                form.querySelectorAll('input, button').forEach(function (el) { el.disabled = true; });
+                confirmation.hidden = false;
+                confirmation.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        })();
+    </script>
+</body>
+</html>

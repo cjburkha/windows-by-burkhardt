@@ -162,7 +162,7 @@ indexHtmlTemplate = indexHtmlTemplate
 //   via the frontend (S3 sync) path — no Docker rebuild required.
 //   A 5-minute in-memory cache avoids hitting S3 on every request.
 // In dev / CI (ASSET_BASE unset): templates are read from disk as before.
-const PAGE_NAMES = ['reviews', 'gallery', 'contact', 'privacy'];
+const PAGE_NAMES = ['reviews', 'gallery', 'contact', 'privacy', 'sms-signup', 'sms-terms'];
 const templateCache = new Map(); // page → { html, fetchedAt }
 const TEMPLATE_TTL_MS = 5 * 60 * 1000;
 
