@@ -11,6 +11,7 @@ const xss = require('xss');
 const emailService        = require('./services/emailService');
 const dbService           = require('./services/dbService');
 const metaConversions     = require('./services/metaConversionsService');
+const shortlinkService    = require('./services/shortlinkService');
 
 // ── Tenant registry ──────────────────────────────────────────────────────────────────
 // Tenants are loaded from the DB at startup and held in memory.
@@ -269,6 +270,21 @@ for (const page of PAGE_NAMES) {
     res.send(html);
   });
 }
+
+// Campaign shortlink redirect: /<slug-week> (e.g. /spring2026-1) → 302 to the
+// full UTM URL stored in the apex shortlinks table. The slug pattern (alnum +
+// '-' + digits) is intentionally narrow so it can't shadow real page paths.
+app.get('/:slug', async (req, res, next) => {
+  const slug = req.params.slug;
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*-\d+$/.test(slug)) return next();
+  try {
+    const target = await shortlinkService.resolveAndCount(slug);
+    if (target) return res.redirect(302, target);
+  } catch (err) {
+    console.error(`shortlink lookup failed for ${slug}:`, err.message);
+  }
+  next();
+});
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
