@@ -12,6 +12,7 @@ const emailService        = require('./services/emailService');
 const dbService           = require('./services/dbService');
 const metaConversions     = require('./services/metaConversionsService');
 const shortlinkService    = require('./services/shortlinkService');
+const openTrackerService  = require('./services/openTrackerService');
 
 // ── Tenant registry ──────────────────────────────────────────────────────────────────
 // Tenants are loaded from the DB at startup and held in memory.
@@ -271,6 +272,29 @@ for (const page of PAGE_NAMES) {
   });
 }
 
+// Email open-tracking pixel. Returns a 1x1 GIF whether or not the row updates,
+// so a misconfigured client can never reveal which leads exist via response code.
+const PIXEL_GIF = Buffer.from(
+  'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+  'base64',
+);
+app.get('/t/o/:campaignId/:leadId/:week/:token', async (req, res) => {
+  const { campaignId, leadId, week, token } = req.params;
+  const leadIdNum = parseInt(leadId, 10);
+  const weekNum = parseInt(week, 10);
+  // Always serve the pixel; do the DB work fire-and-forget.
+  res.setHeader('Content-Type', 'image/gif');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.end(PIXEL_GIF);
+  if (!Number.isFinite(leadIdNum) || !Number.isFinite(weekNum)) return;
+  if (!openTrackerService.verifyToken(campaignId, leadIdNum, weekNum, token)) return;
+  try {
+    await openTrackerService.recordOpen(campaignId, leadIdNum, weekNum);
+  } catch (err) {
+    console.error('open tracker write failed:', err.message);
+  }
+});
+
 // Campaign shortlink redirect: /<slug-week> (e.g. /spring2026-1) → 302 to the
 // full UTM URL stored in the apex shortlinks table. The slug pattern (alnum +
 // '-' + digits) is intentionally narrow so it can't shadow real page paths.
@@ -415,7 +439,24 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
+// Surface campaign-tracking misconfiguration loudly at boot, before any pixel
+// fires silently into the void. APEX_DATABASE_URL drives both the shortlink
+// redirect (/:slug) and the open pixel (/t/o/...); PIXEL_SECRET must match the
+// value the apex sender uses to mint pixel tokens.
+function _warnIfMissingTrackingEnv() {
+  const issues = [];
+  if (!process.env.APEX_DATABASE_URL) {
+    issues.push('APEX_DATABASE_URL is not set — shortlink redirects and open-pixel writes will silently no-op');
+  }
+  const sec = process.env.PIXEL_SECRET || process.env.UNSUBSCRIBE_SECRET;
+  if (!sec || sec === 'change-me') {
+    issues.push('PIXEL_SECRET (or UNSUBSCRIBE_SECRET) is not set or is the default — every pixel HMAC will fail and zero opens will record');
+  }
+  for (const msg of issues) console.warn(`⚠️  ${msg}`);
+}
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  _warnIfMissingTrackingEnv();
 });
