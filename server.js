@@ -296,12 +296,19 @@ app.get('/t/o/:campaignId/:leadId/:week/:token', async (req, res) => {
   }
 });
 
-// Mandrill SMS inbound webhook. Mandrill HEADs the URL to validate it during
-// registration, then POSTs application/x-www-form-urlencoded with a single
-// `mandrill_events` field containing a JSON array of events.
+// Mandrill SMS inbound webhook. Mandrill validates the URL during webhook
+// registration with a POST that has no signed body — accept those (and HEAD/GET
+// pings) with a 200 so registration can complete. Once events arrive, the
+// signature is enforced before any DB write.
 const mandrillUrlencoded = bodyParser.urlencoded({ extended: true, limit: '256kb' });
 app.head('/webhooks/mandrill-sms', (_req, res) => res.sendStatus(200));
+app.get('/webhooks/mandrill-sms',  (_req, res) => res.sendStatus(200));
 app.post('/webhooks/mandrill-sms', mandrillUrlencoded, async (req, res) => {
+  const eventsRaw = req.body && req.body.mandrill_events;
+  // Empty body = registration validation ping. Acknowledge so Mandrill marks
+  // the URL valid; nothing to process.
+  if (!eventsRaw) return res.sendStatus(200);
+
   const key = process.env.MANDRILL_WEBHOOK_KEY;
   const url = process.env.MANDRILL_WEBHOOK_URL;
   if (!smsInboundService.verifyMandrillSignature(req, key, url)) {
@@ -311,7 +318,7 @@ app.post('/webhooks/mandrill-sms', mandrillUrlencoded, async (req, res) => {
   res.sendStatus(200);
   let events = [];
   try {
-    events = JSON.parse(req.body.mandrill_events || '[]');
+    events = JSON.parse(eventsRaw);
   } catch (err) {
     console.error('mandrill webhook: bad JSON in mandrill_events:', err.message);
     return;
