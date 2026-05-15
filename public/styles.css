@@ -805,6 +805,10 @@ footer {
         gap: 60px;
     }
 
+    .form-intro blockquote {
+        display: none;
+    }
+
     .apex-inner {
         grid-template-columns: 1fr;
         gap: 48px;

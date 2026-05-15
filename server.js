@@ -13,6 +13,7 @@ const dbService           = require('./services/dbService');
 const metaConversions     = require('./services/metaConversionsService');
 const shortlinkService    = require('./services/shortlinkService');
 const openTrackerService  = require('./services/openTrackerService');
+const smsInboundService   = require('./services/smsInboundService');
 
 // ── Tenant registry ──────────────────────────────────────────────────────────────────
 // Tenants are loaded from the DB at startup and held in memory.
@@ -295,6 +296,39 @@ app.get('/t/o/:campaignId/:leadId/:week/:token', async (req, res) => {
   }
 });
 
+// Mandrill SMS inbound webhook. Mandrill HEADs the URL to validate it during
+// registration, then POSTs application/x-www-form-urlencoded with a single
+// `mandrill_events` field containing a JSON array of events.
+const mandrillUrlencoded = bodyParser.urlencoded({ extended: true, limit: '256kb' });
+app.head('/webhooks/mandrill-sms', (_req, res) => res.sendStatus(200));
+app.post('/webhooks/mandrill-sms', mandrillUrlencoded, async (req, res) => {
+  const key = process.env.MANDRILL_WEBHOOK_KEY;
+  const url = process.env.MANDRILL_WEBHOOK_URL;
+  if (!smsInboundService.verifyMandrillSignature(req, key, url)) {
+    return res.status(401).send('bad signature');
+  }
+  // Always 200 fast — Mandrill retries non-2xx for hours.
+  res.sendStatus(200);
+  let events = [];
+  try {
+    events = JSON.parse(req.body.mandrill_events || '[]');
+  } catch (err) {
+    console.error('mandrill webhook: bad JSON in mandrill_events:', err.message);
+    return;
+  }
+  for (const ev of events) {
+    if (ev.event !== 'inbound_sms') continue;
+    try {
+      const result = await smsInboundService.recordInbound(ev);
+      if (result.stop) {
+        console.log(`SMS STOP from ${ev.msg && ev.msg.from_phone} → lead ${result.leadId || 'unmatched'} unsubscribed`);
+      }
+    } catch (err) {
+      console.error('mandrill inbound write failed:', err.message);
+    }
+  }
+});
+
 // Campaign shortlink redirect: /<slug-week> (e.g. /spring2026-1) → 302 to the
 // full UTM URL stored in the apex shortlinks table. The slug pattern (alnum +
 // '-' + digits) is intentionally narrow so it can't shadow real page paths.
@@ -451,6 +485,9 @@ function _warnIfMissingTrackingEnv() {
   const sec = process.env.PIXEL_SECRET || process.env.UNSUBSCRIBE_SECRET;
   if (!sec || sec === 'change-me') {
     issues.push('PIXEL_SECRET (or UNSUBSCRIBE_SECRET) is not set or is the default — every pixel HMAC will fail and zero opens will record');
+  }
+  if (!process.env.MANDRILL_WEBHOOK_KEY || !process.env.MANDRILL_WEBHOOK_URL) {
+    issues.push('MANDRILL_WEBHOOK_KEY and/or MANDRILL_WEBHOOK_URL is not set — SMS STOP replies will be rejected with 401 and never recorded');
   }
   for (const msg of issues) console.warn(`⚠️  ${msg}`);
 }
