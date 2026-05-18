@@ -809,6 +809,10 @@ footer {
         display: none;
     }
 
+    .form-intro > p {
+        margin-bottom: 0;
+    }
+
     .apex-inner {
         grid-template-columns: 1fr;
         gap: 48px;
