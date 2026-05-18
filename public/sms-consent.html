@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Authorization &mdash; {{TENANT_BRAND_NAME}}</title>
+    <meta name="description" content="Authorize {{TENANT_BRAND_NAME}} to send you text messages.">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Merriweather+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{{TENANT_FAVICON}}">
+    <meta name="wbb-ga4-id" content="{{TENANT_GA4_ID}}">
+    <link rel="stylesheet" href="styles.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{TENANT_GA4_ID}}"></script>
+    <script src="analytics.js"></script>
+    <style>
+        .sms-consent-page .form-intro h2 { margin-top: 0; }
+
+        .consent-disclosure-box {
+            border: 1.5px solid #1a1a1a;
+            background: #f8f8f5;
+            padding: 18px 20px;
+            margin: 18px 0;
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+        .consent-disclosure-box strong { font-weight: 700; }
+
+        .signature-block {
+            margin: 24px 0 8px 0;
+        }
+        .signature-block label {
+            display: block;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .signature-canvas-wrap {
+            position: relative;
+            border: 1.5px solid #1a1a1a;
+            background: #fff;
+            border-radius: 4px;
+        }
+        #signatureCanvas {
+            display: block;
+            width: 100%;
+            height: 160px;
+            touch-action: none;
+            cursor: crosshair;
+        }
+        .signature-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #bbb;
+            font-style: italic;
+            pointer-events: none;
+            font-size: 0.9rem;
+        }
+        .signature-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        .btn-clear-sig {
+            background: none;
+            border: 1px solid #999;
+            color: #555;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .btn-clear-sig:hover { background: #eee; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <div class="brand-primary">
+                <a href="/" class="brand-name">{{TENANT_BRAND_NAME}}</a>
+                <span class="brand-divider"></span>
+                <span class="brand-sub">An <strong>Apex Energy Group</strong> Partner</span>
+            </div>
+            <nav id="mainNav">
+                <div class="nav-links" id="navLinks">
+                    <a href="/reviews" class="nav-link">Reviews</a>
+                    <a href="/gallery" class="nav-link">Gallery</a>
+                    <a href="/contact" class="nav-link">Contact</a>
+                </div>
+                <a href="/#schedule" class="nav-cta">Schedule Now</a>
+                <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-main sms-consent-page">
+
+        <div class="page-hero">
+            <p class="hero-eyebrow">Authorization</p>
+            <h1>Text Message<br><em>Authorization</em></h1>
+            <p class="page-hero-sub">Sign below to receive offers and updates from {{TENANT_BRAND_NAME}}.</p>
+        </div>
+
+        <section class="form-section" id="sms-consent">
+            <div class="form-container">
+
+                <div class="form-intro">
+                    <h2>Customer Information</h2>
+                    <p>Please fill out your contact information and sign below to confirm consent to receive text messages from {{TENANT_BRAND_NAME}}.</p>
+                </div>
+
+                <form id="smsConsentForm" class="consultation-form" novalidate>
+
+                    <div style="position:absolute;left:-9999px;" aria-hidden="true">
+                        <input type="text" name="website" id="consentWebsite" tabindex="-1" autocomplete="off">
+                    </div>
+
+                    <div class="form-row">
+                        <input type="text" id="consentName" name="name" placeholder="Full Name *" required autocomplete="name">
+                    </div>
+
+                    <div class="form-row">
+                        <input type="tel" id="consentPhone" name="phone" placeholder="Mobile Phone Number *" required autocomplete="tel" pattern="[0-9\-\(\)\+\s]{10,}">
+                    </div>
+
+                    <div class="form-row">
+                        <input type="text" id="consentAddress" name="address" placeholder="Service Address" autocomplete="street-address">
+                    </div>
+
+                    <div class="form-row">
+                        <input type="email" id="consentEmail" name="email" placeholder="Email Address (optional)" autocomplete="email">
+                    </div>
+
+                    <div class="consent-disclosure-box">
+                        <p id="consentDisclosureText">
+                            <strong>By checking the box and signing below, I agree to receive recurring
+                            marketing, promotional, appointment, and follow-up text messages from
+                            {{TENANT_BRAND_NAME}}</strong> at the mobile number I provided above,
+                            including messages sent using an automatic telephone dialing system.
+                            I understand that <strong>consent is not a condition of any purchase or
+                            service</strong>. Message frequency varies (typically 1&ndash;8 messages
+                            per month). <strong>Message and data rates may apply.</strong>
+                            I can reply <strong>HELP</strong> for help or <strong>STOP</strong>
+                            to unsubscribe at any time. See <a href="/sms-terms">SMS Terms of
+                            Service</a> and <a href="/privacy">Privacy Policy</a>.
+                        </p>
+                    </div>
+
+                    <div class="sms-consent-block">
+                        <label class="sms-consent-label">
+                            <input type="checkbox" id="consentCheckbox" name="smsConsent" required>
+                            <span>
+                                <strong>I have read and agree to the above. I authorize
+                                {{TENANT_BRAND_NAME}} to send me text messages as described.</strong>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="signature-block">
+                        <label for="signatureCanvas">Signature</label>
+                        <div class="signature-canvas-wrap">
+                            <canvas id="signatureCanvas"></canvas>
+                            <span class="signature-placeholder" id="signaturePlaceholder">Sign here</span>
+                        </div>
+                        <div class="signature-actions">
+                            <span>Use your finger, stylus, or mouse</span>
+                            <button type="button" class="btn-clear-sig" id="clearSignature">Clear</button>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <button type="submit" class="btn-submit">Submit Authorization</button>
+                        <p class="form-note">Your phone number and consent record will be stored as proof of express written consent. We never share opt-in data with third parties for marketing.</p>
+                    </div>
+
+                    <div id="consentConfirmation" class="form-confirmation" hidden>
+                        <h2>Thank you, you&#8217;re authorized.</h2>
+                        <p>You&#8217;ll receive a confirmation text from <strong>1-855-612-7811</strong> shortly. Reply <strong>STOP</strong> at any time to opt out.</p>
+                    </div>
+
+                    <div id="consentFormMessage" class="form-message" role="status"></div>
+                </form>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <p class="footer-name">{{TENANT_BRAND_NAME}}</p>
+                <p class="footer-partner">An Apex Energy Group Authorized Partner</p>
+            </div>
+            <div class="footer-links">
+                <a href="/#schedule">Schedule Consultation</a>
+                <a href="/reviews">Reviews</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/sms-terms">SMS Terms</a>
+                <a href="https://www.apexenergygroup.com" target="_blank" rel="noopener">Apex Energy Group</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 {{TENANT_BRAND_NAME}}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        (function () {
+            var canvas = document.getElementById('signatureCanvas');
+            var ctx = canvas.getContext('2d');
+            var placeholder = document.getElementById('signaturePlaceholder');
+            var clearBtn = document.getElementById('clearSignature');
+            var form = document.getElementById('smsConsentForm');
+            var confirmation = document.getElementById('consentConfirmation');
+            var message = document.getElementById('consentFormMessage');
+
+            function sizeCanvas() {
+                var ratio = window.devicePixelRatio || 1;
+                var rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * ratio;
+                canvas.height = rect.height * ratio;
+                ctx.scale(ratio, ratio);
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#111';
+            }
+            sizeCanvas();
+            window.addEventListener('resize', function () {
+                var data = canvas.toDataURL();
+                sizeCanvas();
+                if (!isEmpty) {
+                    var img = new Image();
+                    img.onload = function () { ctx.drawImage(img, 0, 0, canvas.getBoundingClientRect().width, canvas.getBoundingClientRect().height); };
+                    img.src = data;
+                }
+            });
+
+            var drawing = false;
+            var isEmpty = true;
+            var last = { x: 0, y: 0 };
+
+            function pos(e) {
+                var rect = canvas.getBoundingClientRect();
+                var t = (e.touches && e.touches[0]) || e;
+                return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+            }
+            function start(e) {
+                e.preventDefault();
+                drawing = true;
+                last = pos(e);
+                if (isEmpty) {
+                    placeholder.style.display = 'none';
+                    isEmpty = false;
+                }
+            }
+            function move(e) {
+                if (!drawing) return;
+                e.preventDefault();
+                var p = pos(e);
+                ctx.beginPath();
+                ctx.moveTo(last.x, last.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+                last = p;
+            }
+            function end() { drawing = false; }
+
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', move);
+            canvas.addEventListener('mouseup', end);
+            canvas.addEventListener('mouseleave', end);
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', move, { passive: false });
+            canvas.addEventListener('touchend', end);
+
+            clearBtn.addEventListener('click', function () {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                placeholder.style.display = 'block';
+                isEmpty = true;
+            });
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                message.textContent = '';
+
+                if (document.getElementById('consentWebsite').value) return;
+
+                var name = document.getElementById('consentName').value.trim();
+                var phone = document.getElementById('consentPhone').value.trim();
+                var address = document.getElementById('consentAddress').value.trim();
+                var email = document.getElementById('consentEmail').value.trim();
+                var checked = document.getElementById('consentCheckbox').checked;
+
+                if (!name || !phone) {
+                    message.textContent = 'Please enter your name and mobile phone number.';
+                    return;
+                }
+                if (!checked) {
+                    message.textContent = 'Please check the consent box to authorize text messages.';
+                    return;
+                }
+                if (isEmpty) {
+                    message.textContent = 'Please sign in the signature box.';
+                    return;
+                }
+
+                var disclosureText = document.getElementById('consentDisclosureText').innerText;
+                var signaturePng = canvas.toDataURL('image/png');
+
+                form.querySelectorAll('input, button').forEach(function (el) { el.disabled = true; });
+                message.textContent = 'Submitting…';
+
+                fetch('/api/sms-consent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        phone: phone,
+                        address: address,
+                        email: email,
+                        consent: true,
+                        consentText: disclosureText,
+                        consentTimestamp: new Date().toISOString(),
+                        signature: signaturePng,
+                        pageUrl: window.location.href,
+                        userAgent: navigator.userAgent
+                    })
+                }).then(function (r) {
+                    return r.json().catch(function () { return { success: r.ok }; });
+                }).then(function (j) {
+                    if (j && j.success) {
+                        confirmation.hidden = false;
+                        message.textContent = '';
+                        confirmation.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        message.textContent = (j && j.message) || 'Submission failed. Please try again.';
+                        form.querySelectorAll('input, button').forEach(function (el) { el.disabled = false; });
+                    }
+                }).catch(function () {
+                    message.textContent = 'Network error. Please try again.';
+                    form.querySelectorAll('input, button').forEach(function (el) { el.disabled = false; });
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

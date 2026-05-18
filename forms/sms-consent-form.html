@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SMS Consent Form &mdash; Windows by Burkhardt</title>
+    <style>
+        @page { size: letter; margin: 0.6in; }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: Georgia, "Times New Roman", serif;
+            color: #111;
+            font-size: 11pt;
+            line-height: 1.45;
+            margin: 0;
+            padding: 0.4in;
+            max-width: 8.5in;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid #111;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+        }
+
+        .brand {
+            font-size: 18pt;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .brand-sub {
+            font-size: 9pt;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        .form-title {
+            font-size: 11pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: right;
+        }
+
+        h2 {
+            font-size: 11pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 18px 0 6px 0;
+            border-bottom: 1px solid #999;
+            padding-bottom: 2px;
+        }
+
+        .fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px 24px;
+            margin-bottom: 12px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field-label {
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            color: #555;
+            letter-spacing: 0.5px;
+            margin-bottom: 14px;
+        }
+
+        .field-line {
+            border-bottom: 1px solid #111;
+            min-height: 18px;
+        }
+
+        .consent-box {
+            border: 1.5px solid #111;
+            padding: 12px 14px;
+            margin: 10px 0;
+            background: #fafafa;
+        }
+
+        .consent-checkbox-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid #111;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .consent-text {
+            font-size: 10pt;
+            line-height: 1.5;
+        }
+
+        .consent-text strong { font-weight: 700; }
+
+        .signature-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-top: 18px;
+        }
+
+        .signature-line {
+            border-bottom: 1.5px solid #111;
+            min-height: 32px;
+        }
+
+        .signature-label {
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            color: #555;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            font-size: 8.5pt;
+            color: #555;
+            line-height: 1.4;
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
+        }
+
+        .rep-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-top: 14px;
+        }
+
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+
+        .print-button {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            padding: 8px 16px;
+            background: #111;
+            color: #fff;
+            border: none;
+            font-family: inherit;
+            font-size: 10pt;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="print-button no-print" onclick="window.print()">Print Form</button>
+
+    <div class="header">
+        <div>
+            <div class="brand">Windows by Burkhardt</div>
+            <div class="brand-sub">An Apex Energy Group Authorized Partner &middot; Milwaukee, WI</div>
+        </div>
+        <div class="form-title">Text Message<br>Consent Form</div>
+    </div>
+
+    <h2>Customer Information</h2>
+
+    <div class="fields">
+        <div class="field">
+            <div class="field-line"></div>
+            <div class="field-label">Full Name</div>
+        </div>
+        <div class="field">
+            <div class="field-line"></div>
+            <div class="field-label">Mobile Phone Number</div>
+        </div>
+        <div class="field">
+            <div class="field-line"></div>
+            <div class="field-label">Service Address</div>
+        </div>
+        <div class="field">
+            <div class="field-line"></div>
+            <div class="field-label">Email (optional)</div>
+        </div>
+    </div>
+
+    <h2>Consent to Receive Text Messages</h2>
+
+    <div class="consent-box">
+        <div class="consent-checkbox-row">
+            <div class="checkbox"></div>
+            <div class="consent-text">
+                <strong>YES</strong> &mdash; By checking this box and signing below, I agree to receive
+                <strong>recurring marketing, promotional, appointment, and follow-up text messages</strong>
+                from <strong>Windows by Burkhardt</strong> at the mobile number I provided above,
+                including messages sent using an automatic telephone dialing system.
+                I understand that <strong>consent is not a condition of any purchase or service</strong>.
+                Message frequency varies (typically 1&ndash;8 messages per month).
+                <strong>Message and data rates may apply.</strong>
+                I can reply <strong>HELP</strong> for help or <strong>STOP</strong> to unsubscribe at any time.
+                Customers can also authorize digitally at <strong>windowsbyburkhardt.com/sms-consent</strong>.
+                See SMS Terms at <strong>windowsbyburkhardt.com/sms-terms</strong>
+                and Privacy Policy at <strong>windowsbyburkhardt.com/privacy</strong>.
+            </div>
+        </div>
+    </div>
+
+    <div class="signature-row">
+        <div>
+            <div class="signature-line"></div>
+            <div class="signature-label">Customer Signature</div>
+        </div>
+        <div>
+            <div class="signature-line"></div>
+            <div class="signature-label">Date</div>
+        </div>
+    </div>
+
+    <h2>Sales Representative</h2>
+
+    <div class="rep-row">
+        <div>
+            <div class="signature-line"></div>
+            <div class="signature-label">Representative Name (print)</div>
+        </div>
+        <div>
+            <div class="signature-line"></div>
+            <div class="signature-label">Date</div>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        <strong>Retention:</strong> Windows by Burkhardt retains this signed authorization as proof
+        of express written consent under the TCPA and CTIA Messaging Principles. The customer may
+        revoke consent at any time by replying STOP to any text message, calling 1-855-612-7811,
+        or emailing support. SMS originator opt-in data is never shared with third parties for
+        marketing purposes. Form revision: 2026-05.
+    </div>
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { SESClient, SendEmailCommand, SendRawEmailCommand } = require('@aws-sdk/client-ses');
 
 /**
  * Send consultation request email via AWS SES
@@ -217,7 +217,146 @@ Co-branded with Apex Energy Group
   }
 }
 
+/**
+ * Send the SMS-consent record to the tenant's recipient inbox as a raw MIME
+ * email with the signature PNG attached. Provides an auditable trail of
+ * express written consent for TCR / CTIA compliance review.
+ */
+async function sendSmsConsentRecord(data, tenant) {
+  const {
+    name, phone, address, email,
+    consentText, consentTimestamp,
+    signature, ip, userAgent, pageUrl,
+  } = data;
+
+  const safe = (s) => String(s || '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  const textBody = `SMS CONSENT RECORD — ${tenant.brandName}
+
+Customer:    ${name}
+Phone:       ${phone}
+Address:     ${address || '(not provided)'}
+Email:       ${email || '(not provided)'}
+
+Captured:    ${consentTimestamp}
+IP:          ${ip || '(unknown)'}
+User Agent:  ${userAgent || '(unknown)'}
+Page:        ${pageUrl || '(unknown)'}
+
+Disclosure shown to customer:
+-----------------------------
+${consentText}
+
+Signature attached: signature.png
+This record serves as proof of express written consent under TCPA / CTIA Messaging Principles.`;
+
+  const htmlBody = `<html><body style="font-family: Arial, sans-serif; line-height: 1.55; color: #222; max-width: 680px;">
+<h2 style="color: #1a1a1a; border-bottom: 2px solid #1a1a1a; padding-bottom: 6px;">SMS Consent Record</h2>
+<p style="font-size: 12px; color: #666; margin-top: -8px;">${safe(tenant.brandName)} &mdash; proof of express written consent</p>
+
+<h3 style="color: #1a1a1a; margin-top: 24px;">Customer</h3>
+<table cellpadding="4" style="border-collapse: collapse;">
+  <tr><td><strong>Name</strong></td><td>${safe(name)}</td></tr>
+  <tr><td><strong>Phone</strong></td><td>${safe(phone)}</td></tr>
+  <tr><td><strong>Address</strong></td><td>${safe(address) || '<em>not provided</em>'}</td></tr>
+  <tr><td><strong>Email</strong></td><td>${safe(email) || '<em>not provided</em>'}</td></tr>
+</table>
+
+<h3 style="color: #1a1a1a; margin-top: 24px;">Consent metadata</h3>
+<table cellpadding="4" style="border-collapse: collapse; font-size: 13px;">
+  <tr><td><strong>Captured</strong></td><td>${safe(consentTimestamp)}</td></tr>
+  <tr><td><strong>IP address</strong></td><td>${safe(ip) || '<em>unknown</em>'}</td></tr>
+  <tr><td><strong>User agent</strong></td><td>${safe(userAgent) || '<em>unknown</em>'}</td></tr>
+  <tr><td><strong>Page URL</strong></td><td>${safe(pageUrl) || '<em>unknown</em>'}</td></tr>
+</table>
+
+<h3 style="color: #1a1a1a; margin-top: 24px;">Disclosure shown to customer</h3>
+<div style="border: 1px solid #ccc; padding: 12px 14px; background: #fafafa; white-space: pre-wrap;">${safe(consentText)}</div>
+
+<h3 style="color: #1a1a1a; margin-top: 24px;">Signature</h3>
+<p style="font-size: 12px; color: #666;">See attachment <code>signature.png</code>. Inline preview:</p>
+<img src="cid:signature.png" alt="customer signature" style="border: 1px solid #ddd; background: #fff; max-width: 480px;" />
+
+<hr style="margin-top: 30px; border: none; border-top: 1px solid #ddd;" />
+<p style="font-size: 11px; color: #666;">Retain this record as proof of express written consent under TCPA / CTIA Messaging Principles. Submitted via ${safe(tenant.brandName)} website.</p>
+</body></html>`;
+
+  if (process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true') {
+    return { success: true, messageId: 'test-mock-consent-id', emailBody: textBody };
+  }
+
+  const sesClient = new SESClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.AWS_SES_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.AWS_SES_SECRET_ACCESS_KEY,
+    },
+  });
+
+  const sigBase64 = (signature || '').replace(/^data:image\/png;base64,/, '');
+  const boundary = `=_apex_consent_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const altBoundary = `=_apex_consent_alt_${Math.random().toString(36).slice(2)}`;
+  const fromHeader = `${tenant.brandName} <${tenant.fromEmail}>`;
+  const toHeader = tenant.ccEmail ? `${tenant.recipientEmail}` : tenant.recipientEmail;
+  const subject = `SMS Consent — ${name} (${phone})`;
+
+  const headers = [
+    `From: ${fromHeader}`,
+    `To: ${toHeader}`,
+    ...(tenant.ccEmail ? [`Cc: ${tenant.ccEmail}`] : []),
+    `Subject: ${subject}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/related; boundary="${boundary}"`,
+  ].join('\r\n');
+
+  const rawBody = [
+    headers,
+    '',
+    `--${boundary}`,
+    `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+    '',
+    `--${altBoundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    textBody,
+    '',
+    `--${altBoundary}`,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    htmlBody,
+    '',
+    `--${altBoundary}--`,
+    '',
+    `--${boundary}`,
+    'Content-Type: image/png; name="signature.png"',
+    'Content-Transfer-Encoding: base64',
+    'Content-ID: <signature.png>',
+    'Content-Disposition: attachment; filename="signature.png"',
+    '',
+    sigBase64.replace(/(.{76})/g, '$1\r\n'),
+    '',
+    `--${boundary}--`,
+    '',
+  ].join('\r\n');
+
+  try {
+    const command = new SendRawEmailCommand({
+      Source: tenant.fromEmail,
+      Destinations: [tenant.recipientEmail, ...(tenant.ccEmail ? [tenant.ccEmail] : [])],
+      RawMessage: { Data: Buffer.from(rawBody, 'utf-8') },
+    });
+    const response = await sesClient.send(command);
+    console.log('SMS consent email sent:', response.MessageId);
+    return { success: true, messageId: response.MessageId };
+  } catch (error) {
+    console.error('Error sending SMS consent email:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   sendConsultationRequest,
-  sendConfirmation
+  sendConfirmation,
+  sendSmsConsentRecord,
 };

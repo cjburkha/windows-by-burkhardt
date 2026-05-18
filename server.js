@@ -113,7 +113,9 @@ app.use(cors({
   }
 }));
 
-// Limit request body size to 10kb to prevent payload flooding
+// Limit request body size to 10kb to prevent payload flooding.
+// SMS-consent endpoint accepts a signature PNG (~50-150kb) so it mounts its
+// own body parser below with a 256kb limit instead of using the global one.
 app.use(bodyParser.json({ limit: '10kb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10kb' }));
 
@@ -165,7 +167,7 @@ indexHtmlTemplate = indexHtmlTemplate
 //   via the frontend (S3 sync) path — no Docker rebuild required.
 //   A 5-minute in-memory cache avoids hitting S3 on every request.
 // In dev / CI (ASSET_BASE unset): templates are read from disk as before.
-const PAGE_NAMES = ['reviews', 'gallery', 'contact', 'privacy', 'sms-signup', 'sms-terms'];
+const PAGE_NAMES = ['reviews', 'gallery', 'contact', 'privacy', 'sms-signup', 'sms-terms', 'sms-consent'];
 const templateCache = new Map(); // page → { html, fetchedAt }
 const TEMPLATE_TTL_MS = 5 * 60 * 1000;
 
@@ -472,6 +474,61 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       success: false, 
       message: 'Failed to submit your request. Please try again later.' 
     });
+  }
+});
+
+// SMS consent endpoint — records express written consent for the SMS program.
+// Captures name, phone, the exact disclosure text shown, signature PNG, IP, and
+// user agent. Emails the consent record to the tenant's recipient inbox so
+// there's an auditable trail for TCR/CTIA compliance review.
+const smsConsentJson = bodyParser.json({ limit: '512kb' });
+app.post('/api/sms-consent', smsConsentJson, contactLimiter, async (req, res) => {
+  try {
+    const tenant = resolveTenant(req);
+    let { name, phone, address, email, consent, consentText, consentTimestamp,
+          signature, pageUrl, userAgent } = req.body || {};
+
+    if (req.body && req.body.website) return res.json({ success: true });
+
+    if (!name || !phone || !consent || !signature) {
+      return res.status(400).json({ success: false, message: 'Name, phone, consent, and signature are required.' });
+    }
+    if (typeof signature !== 'string' || !signature.startsWith('data:image/png;base64,')) {
+      return res.status(400).json({ success: false, message: 'Invalid signature format.' });
+    }
+    if (name.length > 100 || phone.length > 20 || (address && address.length > 200) ||
+        (email && email.length > 254) || (consentText && consentText.length > 4000) ||
+        signature.length > 400000) {
+      return res.status(400).json({ success: false, message: 'One or more fields exceed the maximum allowed length.' });
+    }
+    if (email && !validator.isEmail(email)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
+
+    name        = xss(validator.trim(name));
+    phone       = validator.trim(phone).replace(/[^\d\s\-()+.]/g, '');
+    address     = address ? xss(validator.trim(address)) : '';
+    email       = email ? (validator.normalizeEmail(email) || email) : '';
+    consentText = consentText ? xss(validator.trim(String(consentText))).substring(0, 4000) : '';
+    pageUrl     = pageUrl ? validator.trim(String(pageUrl)).substring(0, 500) : '';
+
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip;
+    const ua = (userAgent || req.headers['user-agent'] || '').toString().substring(0, 500);
+    const timestamp = consentTimestamp || new Date().toISOString();
+
+    const result = await emailService.sendSmsConsentRecord({
+      name, phone, address, email,
+      consentText, consentTimestamp: timestamp,
+      signature, ip, userAgent: ua, pageUrl,
+    }, tenant);
+
+    if (!result.success) throw new Error(result.error || 'Email send failed');
+
+    res.json({ success: true, message: 'Your SMS authorization has been recorded.' });
+  } catch (error) {
+    console.error('Error processing SMS consent:', error);
+    res.status(500).json({ success: false, message: 'Failed to record your authorization. Please try again later.' });
   }
 });
 
