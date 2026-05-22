@@ -14,6 +14,7 @@ const metaConversions     = require('./services/metaConversionsService');
 const shortlinkService    = require('./services/shortlinkService');
 const openTrackerService  = require('./services/openTrackerService');
 const smsInboundService   = require('./services/smsInboundService');
+const referralService     = require('./services/referralService');
 
 // ── Tenant registry ──────────────────────────────────────────────────────────────────
 // Tenants are loaded from the DB at startup and held in memory.
@@ -167,7 +168,10 @@ indexHtmlTemplate = indexHtmlTemplate
 //   via the frontend (S3 sync) path — no Docker rebuild required.
 //   A 5-minute in-memory cache avoids hitting S3 on every request.
 // In dev / CI (ASSET_BASE unset): templates are read from disk as before.
-const PAGE_NAMES = ['reviews', 'gallery', 'contact', 'privacy', 'sms-signup', 'sms-terms', 'sms-consent'];
+// SMS pages (sms-signup, sms-terms, sms-consent) intentionally omitted —
+// SMS sending is paused while we use Mailchimp's UI for any SMS we need to send.
+// Files remain in public/ so they can be re-added here when SMS resumes.
+const PAGE_NAMES = ['reviews', 'gallery', 'contact', 'privacy', 'refer', 'refer-thanks'];
 const templateCache = new Map(); // page → { html, fetchedAt }
 const TEMPLATE_TTL_MS = 5 * 60 * 1000;
 
@@ -477,12 +481,14 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   }
 });
 
-// SMS consent endpoint — records express written consent for the SMS program.
-// Captures name, phone, the exact disclosure text shown, signature PNG, IP, and
-// user agent. Emails the consent record to the tenant's recipient inbox so
-// there's an auditable trail for TCR/CTIA compliance review.
+// SMS consent endpoint — DISABLED. SMS sending is paused while we use Mailchimp's
+// UI for any SMS we need to send. To re-enable, change the path back from
+// '/api/sms-consent-disabled' to '/api/sms-consent' and remove the stub above.
+// services/emailService.js still exports sendSmsConsentRecord for re-use.
+app.post('/api/sms-consent', (_req, res) =>
+  res.status(410).json({ success: false, message: 'SMS consent collection is currently disabled.' }));
 const smsConsentJson = bodyParser.json({ limit: '512kb' });
-app.post('/api/sms-consent', smsConsentJson, contactLimiter, async (req, res) => {
+app.post('/api/sms-consent-disabled', smsConsentJson, contactLimiter, async (req, res) => {
   try {
     const tenant = resolveTenant(req);
     let { name, phone, address, email, consent, consentText, consentTimestamp,
@@ -529,6 +535,120 @@ app.post('/api/sms-consent', smsConsentJson, contactLimiter, async (req, res) =>
   } catch (error) {
     console.error('Error processing SMS consent:', error);
     res.status(500).json({ success: false, message: 'Failed to record your authorization. Please try again later.' });
+  }
+});
+
+// ── Referral campaign routes ──────────────────────────────────────────────────
+// /r/:code is the short URL used in sold-customer drip emails. The code encodes
+// the referring lead's id (HMAC-signed) so we can pre-fill the referral form and
+// later credit the right person their $500 when a referral converts.
+
+// /r/:code — 302 to /refer?r=<code>, only if the code decodes to a real lead.
+// Invalid codes bounce to the generic /refer page so links never look broken.
+// UTM / attribution params on the inbound URL are passed through to /refer so
+// GA4 still records utm_source / utm_campaign etc. for the landing page hit.
+app.get('/r/:code', async (req, res) => {
+  const code = String(req.params.code || '');
+  const leadId = referralService.decodeReferralCode(code);
+  const passthrough = new URLSearchParams();
+  for (const [k, v] of Object.entries(req.query || {})) {
+    if (k === 'r') continue; // we set this ourselves below
+    if (Array.isArray(v)) v.forEach((vi) => passthrough.append(k, String(vi)));
+    else if (v != null) passthrough.append(k, String(v));
+  }
+  if (!leadId) {
+    const qs = passthrough.toString();
+    return res.redirect(302, qs ? `/refer?${qs}` : '/refer');
+  }
+  passthrough.set('r', code);
+  res.redirect(302, `/refer?${passthrough.toString()}`);
+});
+
+// /api/referrer/:code — return the referrer's name/email/phone so the /refer
+// page can pre-fill its referrer fields. Returns 404 on invalid code so a brute
+// force enumerator gets no information about which lead ids exist.
+app.get('/api/referrer/:code', async (req, res) => {
+  const code = String(req.params.code || '');
+  const leadId = referralService.decodeReferralCode(code);
+  if (!leadId) return res.status(404).json({ success: false });
+  try {
+    const lead = await referralService.lookupReferrer(leadId);
+    if (!lead) return res.status(404).json({ success: false });
+    const fullName = [lead.first_name, lead.last_name].filter(Boolean).join(' ');
+    res.json({
+      success: true,
+      name:  fullName,
+      email: lead.email || '',
+      phone: lead.phone_primary || '',
+    });
+  } catch (err) {
+    console.error('referrer lookup failed:', err.message);
+    res.status(500).json({ success: false });
+  }
+});
+
+// POST /api/refer — accept a referral submission, email it to the tenant inbox.
+// Same rate limit as the contact form so a single IP can't flood referrals.
+app.post('/api/refer', contactLimiter, async (req, res) => {
+  try {
+    const tenant = resolveTenant(req);
+    let { referrerName, referrerEmail, referrerPhone,
+          refereeName,  refereeEmail,  refereePhone,
+          note, referrerCode, pageUrl } = req.body || {};
+
+    if (req.body && req.body.website) return res.json({ success: true });
+
+    if (!referrerName || !refereeName) {
+      return res.status(400).json({ success: false, message: 'Names are required.' });
+    }
+    if (!referrerEmail && !referrerPhone) {
+      return res.status(400).json({ success: false, message: 'Referrer email or phone is required.' });
+    }
+    if (!refereeEmail && !refereePhone) {
+      return res.status(400).json({ success: false, message: "Friend's email or phone is required." });
+    }
+    if (referrerEmail && !validator.isEmail(referrerEmail)) {
+      return res.status(400).json({ success: false, message: 'Referrer email is not valid.' });
+    }
+    if (refereeEmail && !validator.isEmail(refereeEmail)) {
+      return res.status(400).json({ success: false, message: "Friend's email is not valid." });
+    }
+
+    const clamp = (s, n) => xss(validator.trim(String(s || ''))).substring(0, n);
+    const phoneClean = (s) => validator.trim(String(s || '')).replace(/[^\d\s\-()+.]/g, '').substring(0, 20);
+    referrerName  = clamp(referrerName, 100);
+    refereeName   = clamp(refereeName, 100);
+    referrerEmail = referrerEmail ? (validator.normalizeEmail(referrerEmail) || referrerEmail) : '';
+    refereeEmail  = refereeEmail ? (validator.normalizeEmail(refereeEmail) || refereeEmail) : '';
+    referrerPhone = phoneClean(referrerPhone);
+    refereePhone  = phoneClean(refereePhone);
+    note          = clamp(note, 2000);
+    referrerCode  = clamp(referrerCode, 32);
+    pageUrl       = clamp(pageUrl, 500);
+
+    // If a code was supplied, decode and look up so the email can show "this came
+    // from <known lead>" rather than just trusting the form fields.
+    let knownReferrerLeadId = null;
+    if (referrerCode) {
+      knownReferrerLeadId = referralService.decodeReferralCode(referrerCode);
+    }
+
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip;
+
+    const result = await emailService.sendReferralRecord({
+      referrerName, referrerEmail, referrerPhone,
+      refereeName,  refereeEmail,  refereePhone,
+      note, referrerCode, knownReferrerLeadId,
+      ip, pageUrl,
+      submittedAt: new Date().toISOString(),
+    }, tenant);
+
+    if (!result.success) throw new Error(result.error || 'Email send failed');
+    res.json({ success: true, message: 'Referral received.' });
+  } catch (error) {
+    console.error('Error processing referral:', error);
+    res.status(500).json({ success: false, message: 'Failed to record your referral. Please try again later.' });
   }
 });
 

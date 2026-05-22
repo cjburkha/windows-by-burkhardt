@@ -355,8 +355,111 @@ This record serves as proof of express written consent under TCPA / CTIA Messagi
   }
 }
 
+/**
+ * Send a referral submission to the tenant's recipient inbox.
+ * Subject and body are formatted for fast scanning so Chris can act on it.
+ */
+async function sendReferralRecord(data, tenant) {
+  const {
+    referrerName, referrerEmail, referrerPhone,
+    refereeName,  refereeEmail,  refereePhone,
+    note, referrerCode, knownReferrerLeadId,
+    ip, pageUrl, submittedAt,
+  } = data;
+
+  const safe = (s) => String(s || '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+
+  const text = `NEW REFERRAL — ${tenant.brandName}
+
+Referrer (the customer earning $500)
+  Name:  ${referrerName}
+  Email: ${referrerEmail || '(none)'}
+  Phone: ${referrerPhone || '(none)'}
+  Lead ID: ${knownReferrerLeadId ? `#${knownReferrerLeadId}` : '(not matched)'}
+  Code:  ${referrerCode || '(none — direct submission)'}
+
+Their friend (the new lead)
+  Name:  ${refereeName}
+  Email: ${refereeEmail || '(none)'}
+  Phone: ${refereePhone || '(none)'}
+
+Note from referrer:
+${note || '(none)'}
+
+Submitted: ${submittedAt}
+IP: ${ip || '(unknown)'}
+Page: ${pageUrl || '(unknown)'}
+
+Next: contact the friend within 1-2 business days. Pay the $500 to the referrer if/when the friend purchases windows.`;
+
+  const html = `<html><body style="font-family: Arial, sans-serif; line-height: 1.55; color: #222; max-width: 680px;">
+<h2 style="color:#1a1a1a;border-bottom:2px solid #76bd1d;padding-bottom:6px;">New Referral &mdash; $500</h2>
+<p style="font-size:12px;color:#666;margin-top:-8px;">${safe(tenant.brandName)}</p>
+
+<h3 style="color:#1a1a1a;margin-top:24px;">Referrer (the customer earning $500)</h3>
+<table cellpadding="4" style="border-collapse:collapse;">
+  <tr><td><strong>Name</strong></td><td>${safe(referrerName)}</td></tr>
+  <tr><td><strong>Email</strong></td><td>${referrerEmail ? `<a href="mailto:${safe(referrerEmail)}">${safe(referrerEmail)}</a>` : '<em>none</em>'}</td></tr>
+  <tr><td><strong>Phone</strong></td><td>${referrerPhone ? `<a href="tel:${safe(referrerPhone)}">${safe(referrerPhone)}</a>` : '<em>none</em>'}</td></tr>
+  <tr><td><strong>Lead ID</strong></td><td>${knownReferrerLeadId ? `#${knownReferrerLeadId}` : '<em>not matched (direct submission)</em>'}</td></tr>
+  <tr><td><strong>Code</strong></td><td>${referrerCode ? `<code>${safe(referrerCode)}</code>` : '<em>none</em>'}</td></tr>
+</table>
+
+<h3 style="color:#1a1a1a;margin-top:24px;">Their friend (the new lead)</h3>
+<table cellpadding="4" style="border-collapse:collapse;">
+  <tr><td><strong>Name</strong></td><td>${safe(refereeName)}</td></tr>
+  <tr><td><strong>Email</strong></td><td>${refereeEmail ? `<a href="mailto:${safe(refereeEmail)}">${safe(refereeEmail)}</a>` : '<em>none</em>'}</td></tr>
+  <tr><td><strong>Phone</strong></td><td>${refereePhone ? `<a href="tel:${safe(refereePhone)}">${safe(refereePhone)}</a>` : '<em>none</em>'}</td></tr>
+</table>
+
+${note ? `<h3 style="color:#1a1a1a;margin-top:24px;">Note from referrer</h3>
+<div style="border:1px solid #ccc;padding:12px 14px;background:#fafafa;white-space:pre-wrap;">${safe(note)}</div>` : ''}
+
+<hr style="margin-top:30px;border:none;border-top:1px solid #ddd;" />
+<p style="font-size:11px;color:#666;">Submitted ${safe(submittedAt)} from IP ${safe(ip)}. Page: ${safe(pageUrl)}.</p>
+<p style="font-size:11px;color:#666;"><strong>Next:</strong> contact the friend within 1&ndash;2 business days. Pay the $500 to the referrer if / when the friend purchases windows.</p>
+</body></html>`;
+
+  if (process.env.NODE_ENV === 'test' || process.env.SKIP_EMAIL === 'true') {
+    return { success: true, messageId: 'test-mock-referral-id', emailBody: text };
+  }
+
+  const sesClient = new SESClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.AWS_SES_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.AWS_SES_SECRET_ACCESS_KEY,
+    },
+  });
+
+  try {
+    const command = new SendEmailCommand({
+      Source: `${tenant.brandName} <${tenant.fromEmail}>`,
+      Destination: {
+        ToAddresses: [tenant.recipientEmail],
+        ...(tenant.ccEmail ? { CcAddresses: [tenant.ccEmail] } : {}),
+      },
+      ReplyToAddresses: referrerEmail ? [referrerEmail] : [tenant.recipientEmail],
+      Message: {
+        Subject: { Data: `New Referral: ${refereeName} (from ${referrerName})`, Charset: 'UTF-8' },
+        Body: {
+          Text: { Data: text, Charset: 'UTF-8' },
+          Html: { Data: html, Charset: 'UTF-8' },
+        },
+      },
+    });
+    const response = await sesClient.send(command);
+    console.log('Referral email sent:', response.MessageId);
+    return { success: true, messageId: response.MessageId };
+  } catch (error) {
+    console.error('Error sending referral email:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   sendConsultationRequest,
   sendConfirmation,
   sendSmsConsentRecord,
+  sendReferralRecord,
 };

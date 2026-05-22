@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refer a Friend &mdash; {{TENANT_BRAND_NAME}}</title>
+    <meta name="description" content="Refer a friend to {{TENANT_BRAND_NAME}} and earn $500 when they purchase windows.">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Merriweather+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{{TENANT_FAVICON}}">
+    <meta name="wbb-ga4-id" content="{{TENANT_GA4_ID}}">
+    <link rel="stylesheet" href="styles.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{TENANT_GA4_ID}}"></script>
+    <script src="analytics.js"></script>
+    <style>
+        .refer-reward {
+            display: inline-block;
+            background: #76bd1d;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.6rem;
+            padding: 8px 18px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            margin: 8px 0 4px;
+        }
+        .refer-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0 28px;
+        }
+        @media (max-width: 640px) { .refer-options { grid-template-columns: 1fr; } }
+        .refer-option {
+            border: 1.5px solid #1a1a1a;
+            border-radius: 6px;
+            padding: 18px 20px;
+            background: #fff;
+        }
+        .refer-option h3 {
+            margin: 0 0 6px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #1a1a1a;
+        }
+        .refer-option .big-cta {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            text-decoration: none;
+            display: block;
+            margin: 6px 0;
+        }
+        .refer-option .big-cta:hover { color: #76bd1d; }
+        .refer-option .sub { font-size: 0.85rem; color: #666; margin: 0; }
+
+        .form-group { margin-top: 22px; }
+        .form-group-header {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #555;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <div class="brand-primary">
+                <a href="/" class="brand-name">{{TENANT_BRAND_NAME}}</a>
+                <span class="brand-divider"></span>
+                <span class="brand-sub">An <strong>Apex Energy Group</strong> Partner</span>
+            </div>
+            <nav id="mainNav">
+                <div class="nav-links" id="navLinks">
+                    <a href="/reviews" class="nav-link">Reviews</a>
+                    <a href="/gallery" class="nav-link">Gallery</a>
+                    <a href="/contact" class="nav-link">Contact</a>
+                </div>
+                <a href="/#schedule" class="nav-cta">Schedule Now</a>
+                <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-main">
+
+        <div class="page-hero">
+            <p class="hero-eyebrow">Refer a Friend</p>
+            <h1>Get <em>$500</em><br>for every friend</h1>
+            <p class="page-hero-sub">When someone you refer purchases windows from {{TENANT_BRAND_NAME}}, we'll send you <strong>$500</strong>. No cap on referrals.</p>
+        </div>
+
+        <section class="form-section">
+            <div class="form-container">
+
+                <div class="form-intro">
+                    <h2>How it works</h2>
+                    <p>You know someone whose windows are drafty, foggy, or just plain old. Send them our way and earn <strong>$500</strong> when they buy. Two easy ways:</p>
+                </div>
+
+                <div class="refer-options">
+                    <div class="refer-option">
+                        <h3>Option 1 &mdash; Just call</h3>
+                        <a href="tel:+12629015282" class="big-cta">262-901-5282</a>
+                        <p class="sub">Tap to call or text. Tell us who to reach out to.</p>
+                    </div>
+                    <div class="refer-option">
+                        <h3>Option 2 &mdash; Send it below</h3>
+                        <p class="big-cta" style="font-size:1.1rem;line-height:1.4;">Fill out the form &darr;</p>
+                        <p class="sub">Takes 30 seconds. We'll reach out to your friend and keep you posted.</p>
+                    </div>
+                </div>
+
+                <form id="referForm" class="consultation-form" novalidate>
+
+                    <div style="position:absolute;left:-9999px;" aria-hidden="true">
+                        <input type="text" name="website" id="referWebsite" tabindex="-1" autocomplete="off">
+                    </div>
+
+                    <input type="hidden" id="referCode" name="referrerCode" value="">
+
+                    <div class="form-group">
+                        <p class="form-group-header">Your information (the referrer)</p>
+                        <div class="form-row">
+                            <input type="text" id="referrerName" name="referrerName" placeholder="Your Name *" required autocomplete="name">
+                        </div>
+                        <div class="form-row">
+                            <input type="email" id="referrerEmail" name="referrerEmail" placeholder="Your Email *" autocomplete="email">
+                        </div>
+                        <div class="form-row">
+                            <input type="tel" id="referrerPhone" name="referrerPhone" placeholder="Your Phone Number *" autocomplete="tel">
+                        </div>
+                        <p class="form-note" style="margin-top:-4px;">Email <em>or</em> phone is required so we can send your $500.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <p class="form-group-header">Your friend's information (the referral)</p>
+                        <div class="form-row">
+                            <input type="text" id="refereeName" name="refereeName" placeholder="Friend's Name *" required>
+                        </div>
+                        <div class="form-row">
+                            <input type="email" id="refereeEmail" name="refereeEmail" placeholder="Friend's Email">
+                        </div>
+                        <div class="form-row">
+                            <input type="tel" id="refereePhone" name="refereePhone" placeholder="Friend's Phone Number">
+                        </div>
+                        <p class="form-note" style="margin-top:-4px;">Email <em>or</em> phone for your friend — whichever you have.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-row">
+                            <textarea id="referNote" name="note" placeholder="Anything we should know? (optional — e.g., 'they mentioned their windows are fogging up')" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <button type="submit" class="btn-submit">Send Referral</button>
+                        <p class="form-note">By submitting, you confirm your friend is OK with us reaching out about new windows.</p>
+                    </div>
+
+                    <div id="referFormMessage" class="form-message" role="status"></div>
+                </form>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <p class="footer-name">{{TENANT_BRAND_NAME}}</p>
+                <p class="footer-partner">An Apex Energy Group Authorized Partner</p>
+            </div>
+            <div class="footer-links">
+                <a href="/#schedule">Schedule Consultation</a>
+                <a href="/reviews">Reviews</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="https://www.apexenergygroup.com" target="_blank" rel="noopener">Apex Energy Group</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 {{TENANT_BRAND_NAME}}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        (function () {
+            // Read ?r=<code> from URL, store in hidden field, and pre-fill referrer info
+            // by hitting /api/referrer/:code which returns name + email + phone if known.
+            var params = new URLSearchParams(window.location.search);
+            var code = params.get('r');
+            if (code) {
+                document.getElementById('referCode').value = code;
+                fetch('/api/referrer/' + encodeURIComponent(code))
+                  .then(function (r) { return r.ok ? r.json() : null; })
+                  .then(function (info) {
+                      if (!info || !info.success) return;
+                      if (info.name)  document.getElementById('referrerName').value  = info.name;
+                      if (info.email) document.getElementById('referrerEmail').value = info.email;
+                      if (info.phone) document.getElementById('referrerPhone').value = info.phone;
+                  }).catch(function () { /* best-effort pre-fill */ });
+            }
+
+            var form = document.getElementById('referForm');
+            var message = document.getElementById('referFormMessage');
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                message.textContent = '';
+
+                if (document.getElementById('referWebsite').value) return;
+
+                var referrerName  = document.getElementById('referrerName').value.trim();
+                var referrerEmail = document.getElementById('referrerEmail').value.trim();
+                var referrerPhone = document.getElementById('referrerPhone').value.trim();
+                var refereeName   = document.getElementById('refereeName').value.trim();
+                var refereeEmail  = document.getElementById('refereeEmail').value.trim();
+                var refereePhone  = document.getElementById('refereePhone').value.trim();
+                var note          = document.getElementById('referNote').value.trim();
+                var referrerCode  = document.getElementById('referCode').value;
+
+                if (!referrerName || !refereeName) {
+                    message.textContent = 'Please enter your name and your friend’s name.';
+                    return;
+                }
+                if (!referrerEmail && !referrerPhone) {
+                    message.textContent = 'Please enter your email or phone so we can send your $500.';
+                    return;
+                }
+                if (!refereeEmail && !refereePhone) {
+                    message.textContent = 'Please enter your friend’s email or phone so we can reach out.';
+                    return;
+                }
+
+                form.querySelectorAll('input, button, textarea').forEach(function (el) { el.disabled = true; });
+                message.textContent = 'Sending…';
+
+                fetch('/api/refer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        referrerName: referrerName,
+                        referrerEmail: referrerEmail,
+                        referrerPhone: referrerPhone,
+                        refereeName: refereeName,
+                        refereeEmail: refereeEmail,
+                        refereePhone: refereePhone,
+                        note: note,
+                        referrerCode: referrerCode,
+                        pageUrl: window.location.href
+                    })
+                }).then(function (r) {
+                    return r.json().catch(function () { return { success: r.ok }; });
+                }).then(function (j) {
+                    if (j && j.success) {
+                        window.location.href = '/refer-thanks?n=' + encodeURIComponent(refereeName.split(' ')[0]);
+                    } else {
+                        message.textContent = (j && j.message) || 'Submission failed. Please try again.';
+                        form.querySelectorAll('input, button, textarea').forEach(function (el) { el.disabled = false; });
+                    }
+                }).catch(function () {
+                    message.textContent = 'Network error. Please try again.';
+                    form.querySelectorAll('input, button, textarea').forEach(function (el) { el.disabled = false; });
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
