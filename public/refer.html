@@ -11,61 +11,6 @@
     <link rel="stylesheet" href="styles.css">
     <script async src="https://www.googletagmanager.com/gtag/js?id={{TENANT_GA4_ID}}"></script>
     <script src="analytics.js"></script>
-    <style>
-        .refer-reward {
-            display: inline-block;
-            background: #76bd1d;
-            color: #fff;
-            font-weight: 700;
-            font-size: 1.6rem;
-            padding: 8px 18px;
-            border-radius: 4px;
-            letter-spacing: 0.5px;
-            margin: 8px 0 4px;
-        }
-        .refer-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 20px 0 28px;
-        }
-        @media (max-width: 640px) { .refer-options { grid-template-columns: 1fr; } }
-        .refer-option {
-            border: 1.5px solid #1a1a1a;
-            border-radius: 6px;
-            padding: 18px 20px;
-            background: #fff;
-        }
-        .refer-option h3 {
-            margin: 0 0 6px;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #1a1a1a;
-        }
-        .refer-option .big-cta {
-            font-family: 'Merriweather', Georgia, serif;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #1a1a1a;
-            text-decoration: none;
-            display: block;
-            margin: 6px 0;
-        }
-        .refer-option .big-cta:hover { color: #76bd1d; }
-        .refer-option .sub { font-size: 0.85rem; color: #666; margin: 0; }
-
-        .form-group { margin-top: 22px; }
-        .form-group-header {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #555;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 6px;
-            margin-bottom: 12px;
-        }
-    </style>
 </head>
 <body>
 
@@ -95,7 +40,7 @@
         <div class="page-hero">
             <p class="hero-eyebrow">Refer a Friend</p>
             <h1>Get <em>$500</em><br>for every friend</h1>
-            <p class="page-hero-sub">When someone you refer purchases windows from {{TENANT_BRAND_NAME}}, we'll send you <strong>$500</strong>. No cap on referrals.</p>
+            <p class="page-hero-sub">When someone you refer purchases windows, we&#8217;ll send you <strong>$500</strong>. No cap on referrals.</p>
         </div>
 
         <section class="form-section">
@@ -114,7 +59,7 @@
                     </div>
                     <div class="refer-option">
                         <h3>Option 2 &mdash; Send it below</h3>
-                        <p class="big-cta" style="font-size:1.1rem;line-height:1.4;">Fill out the form &darr;</p>
+                        <p class="big-cta big-cta-sm">Fill out the form &darr;</p>
                         <p class="sub">Takes 30 seconds. We'll reach out to your friend and keep you posted.</p>
                     </div>
                 </div>
@@ -138,7 +83,7 @@
                         <div class="form-row">
                             <input type="tel" id="referrerPhone" name="referrerPhone" placeholder="Your Phone Number *" autocomplete="tel">
                         </div>
-                        <p class="form-note" style="margin-top:-4px;">Email <em>or</em> phone is required so we can send your $500.</p>
+                        <p class="form-note form-note-tight">Email <em>or</em> phone is required so we can send your $500.</p>
                     </div>
 
                     <div class="form-group">
@@ -152,7 +97,7 @@
                         <div class="form-row">
                             <input type="tel" id="refereePhone" name="refereePhone" placeholder="Friend's Phone Number">
                         </div>
-                        <p class="form-note" style="margin-top:-4px;">Email <em>or</em> phone for your friend — whichever you have.</p>
+                        <p class="form-note form-note-tight">Email <em>or</em> phone for your friend — whichever you have.</p>
                     </div>
 
                     <div class="form-group">
