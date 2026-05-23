@@ -1257,6 +1257,9 @@ footer {
         flex-wrap: wrap;
         gap: 16px;
     }
+    .refer-options {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* SMS opt-in page */
@@ -1576,7 +1579,3 @@ footer {
 }
 
 .btn-clear-sig:hover { border-color: var(--apex-green); color: var(--apex-green); }
-
-@media (max-width: 640px) {
-    .refer-options { grid-template-columns: 1fr; }
-}

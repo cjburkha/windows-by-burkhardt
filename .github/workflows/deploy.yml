@@ -19,6 +19,10 @@ jobs:
       backend:  ${{ steps.filter.outputs.backend }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        # paths-filter needs the prior commit to diff against. Default
+        # shallow clone (depth=1) was failing to fetch it on push events.
+        fetch-depth: 0
     - uses: dorny/paths-filter@v3
       id: filter
       with:
