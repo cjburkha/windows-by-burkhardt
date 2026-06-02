@@ -153,6 +153,11 @@ jobs:
         SES_SECRET:   ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
         SES_FROM:     ${{ secrets.AWS_SES_FROM_EMAIL }}
         RECIPIENT:    ${{ secrets.RECIPIENT_EMAIL }}
+        # HMAC secrets for open-pixel / click / unsubscribe token signing. Must
+        # match the apex-email-campaigns side that signs the links. Omitting
+        # these wipes them from App Runner and breaks tracking + unsubscribe.
+        PIXEL_SECRET:       ${{ secrets.PIXEL_SECRET }}
+        UNSUB_SECRET:       ${{ secrets.UNSUBSCRIBE_SECRET }}
       run: |
         # Use jq to build the JSON so special characters in secrets are safely escaped
         CONFIG=$(jq -n \
@@ -165,6 +170,8 @@ jobs:
           --arg recip    "$RECIPIENT" \
           --arg db_url   "$DB_URL" \
           --arg apex_db  "$APEX_DB_URL" \
+          --arg pixel    "$PIXEL_SECRET" \
+          --arg unsub    "$UNSUB_SECRET" \
           '{
             ImageRepository: {
               ImageIdentifier: $image,
@@ -180,7 +187,9 @@ jobs:
                   AWS_SES_FROM_EMAIL: $ses_from,
                   RECIPIENT_EMAIL:   $recip,
                   DATABASE_URL:      $db_url,
-                  APEX_DATABASE_URL: $apex_db
+                  APEX_DATABASE_URL: $apex_db,
+                  PIXEL_SECRET:      $pixel,
+                  UNSUBSCRIBE_SECRET: $unsub
                 }
               },
               ImageRepositoryType: "ECR"
