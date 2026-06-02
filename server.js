@@ -13,6 +13,7 @@ const dbService           = require('./services/dbService');
 const metaConversions     = require('./services/metaConversionsService');
 const shortlinkService    = require('./services/shortlinkService');
 const openTrackerService  = require('./services/openTrackerService');
+const clickTrackerService = require('./services/clickTrackerService');
 const smsInboundService   = require('./services/smsInboundService');
 const referralService     = require('./services/referralService');
 
@@ -300,6 +301,30 @@ app.get('/t/o/:campaignId/:leadId/:week/:token', async (req, res) => {
   } catch (err) {
     console.error('open tracker write failed:', err.message);
   }
+});
+
+// Per-lead email click tracking. Records who clicked, then 302-redirects to the
+// real destination resolved from the shortlinks table (preserving UTM params).
+// Always redirects — a bad/invalid token still lands the user on /#schedule so
+// a real recipient is never sent to a dead link.
+app.get('/t/c/:campaignId/:leadId/:week/:token', async (req, res) => {
+  const { campaignId, leadId, week, token } = req.params;
+  const leadIdNum = parseInt(leadId, 10);
+  const weekNum = parseInt(week, 10);
+  const fallback = '/#schedule';
+
+  if (!Number.isFinite(leadIdNum) || !Number.isFinite(weekNum) ||
+      !clickTrackerService.verifyToken(campaignId, leadIdNum, weekNum, token)) {
+    return res.redirect(302, fallback);
+  }
+  let target = fallback;
+  try {
+    await clickTrackerService.recordClick(campaignId, leadIdNum, weekNum);
+    target = (await clickTrackerService.resolveTarget(campaignId, weekNum)) || fallback;
+  } catch (err) {
+    console.error('click tracker write failed:', err.message);
+  }
+  res.redirect(302, target);
 });
 
 // Mandrill SMS inbound webhook. Mandrill validates the URL during webhook
