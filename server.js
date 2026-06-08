@@ -14,6 +14,7 @@ const metaConversions     = require('./services/metaConversionsService');
 const shortlinkService    = require('./services/shortlinkService');
 const openTrackerService  = require('./services/openTrackerService');
 const clickTrackerService = require('./services/clickTrackerService');
+const unsubscribeService  = require('./services/unsubscribeService');
 const smsInboundService   = require('./services/smsInboundService');
 const referralService     = require('./services/referralService');
 
@@ -325,6 +326,41 @@ app.get('/t/c/:campaignId/:leadId/:week/:token', async (req, res) => {
     console.error('click tracker write failed:', err.message);
   }
   res.redirect(302, target);
+});
+
+// Email unsubscribe. Two entry points, both signed with UNSUBSCRIBE_SECRET:
+//   GET  — the link in the email body; shows a confirmation page.
+//   POST — RFC 8058 one-click (Gmail/Yahoo "Unsubscribe" button); returns 200.
+// Both set leads.unsubscribed_at, which the send queries filter on.
+function _unsubPage(ok) {
+  const body = ok
+    ? '<h1>You’re unsubscribed.</h1><p>You won’t receive any more emails from Windows by Burkhardt. Sorry to see you go!</p>'
+    : '<h1>We couldn’t process that link.</h1><p>It may have expired. To unsubscribe, reply to the email or contact <a href="mailto:chris@windowsbyburkhardt.com">chris@windowsbyburkhardt.com</a>.</p>';
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribe</title><style>body{font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;color:#222;line-height:1.5}h1{font-size:1.4rem}</style></head><body>${body}</body></html>`;
+}
+
+app.get('/unsubscribe', async (req, res) => {
+  const leadId = parseInt(req.query.id, 10);
+  let ok = false;
+  try {
+    ok = await unsubscribeService.unsubscribe(leadId, String(req.query.t || ''));
+  } catch (err) {
+    console.error('unsubscribe (GET) failed:', err.message);
+  }
+  res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(ok ? 200 : 400).send(_unsubPage(ok));
+});
+
+// One-click (RFC 8058). Mail clients POST here with id/t in the query string.
+app.post('/unsubscribe', async (req, res) => {
+  const leadId = parseInt(req.query.id, 10);
+  try {
+    await unsubscribeService.unsubscribe(leadId, String(req.query.t || ''));
+  } catch (err) {
+    console.error('unsubscribe (POST one-click) failed:', err.message);
+  }
+  res.sendStatus(200); // one-click expects a plain 200 regardless
 });
 
 // Mandrill SMS inbound webhook. Mandrill validates the URL during webhook
