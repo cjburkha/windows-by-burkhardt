@@ -27,7 +27,6 @@
                     <a href="/gallery" class="nav-link">Gallery</a>
                     <a href="/contact" class="nav-link">Contact</a>
                 </div>
-                <a href="/#schedule" class="nav-cta">Schedule Now</a>
                 <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
                     <span></span><span></span><span></span>
                 </button>
@@ -37,54 +36,16 @@
 
     <main class="page-main">
 
-        <div class="page-hero">
-            <p class="hero-eyebrow">Refer a Friend</p>
-            <h1>Get <em>$500</em><br>for every friend</h1>
-            <p class="page-hero-sub">When someone you refer purchases windows, we&#8217;ll send you <strong>$500</strong>. No cap on referrals.</p>
-        </div>
+        <section class="refer-hero">
+            <div class="page-hero">
+                <p class="hero-eyebrow">Refer a Friend</p>
+                <h1>Get <em>$500</em><br>for every friend</h1>
+                <p class="page-hero-sub">Know someone whose windows are drafty, foggy, or just plain old? Send us their name &mdash; when they buy, we&#8217;ll send you <strong>$500</strong>. No limit.</p>
+                <p class="refer-alt">Rather just tell us? Call or text <a href="tel:+12629015282">262-901-5282</a>.</p>
+            </div>
 
-        <section class="form-section">
-            <div class="form-container">
-
-                <div class="form-intro">
-                    <h2>How it works</h2>
-                    <p>You know someone whose windows are drafty, foggy, or just plain old. Send them our way and earn <strong>$500</strong> when they buy. Two easy ways:</p>
-                </div>
-
-                <div class="refer-options">
-                    <div class="refer-option">
-                        <h3>Option 1 &mdash; Just call</h3>
-                        <a href="tel:+12629015282" class="big-cta">262-901-5282</a>
-                        <p class="sub">Tap to call or text. Tell us who to reach out to.</p>
-                    </div>
-                    <div class="refer-option">
-                        <h3>Option 2 &mdash; Send it below</h3>
-                        <p class="big-cta big-cta-sm">Fill out the form &darr;</p>
-                        <p class="sub">Takes 30 seconds. We'll reach out to your friend and keep you posted.</p>
-                    </div>
-                </div>
-
+            <div class="refer-form-card">
                 <form id="referForm" class="consultation-form" novalidate>
-
-                    <div style="position:absolute;left:-9999px;" aria-hidden="true">
-                        <input type="text" name="website" id="referWebsite" tabindex="-1" autocomplete="off">
-                    </div>
-
-                    <input type="hidden" id="referCode" name="referrerCode" value="">
-
-                    <div class="form-group">
-                        <p class="form-group-header">Your information (the referrer)</p>
-                        <div class="form-row">
-                            <input type="text" id="referrerName" name="referrerName" placeholder="Your Name *" required autocomplete="name">
-                        </div>
-                        <div class="form-row">
-                            <input type="email" id="referrerEmail" name="referrerEmail" placeholder="Your Email *" autocomplete="email">
-                        </div>
-                        <div class="form-row">
-                            <input type="tel" id="referrerPhone" name="referrerPhone" placeholder="Your Phone Number *" autocomplete="tel">
-                        </div>
-                        <p class="form-note form-note-tight">Email <em>or</em> phone is required so we can send your $500.</p>
-                    </div>
 
                     <div class="form-group">
                         <p class="form-group-header">Your friend's information (the referral)</p>
@@ -100,6 +61,21 @@
                         <p class="form-note form-note-tight">Email <em>or</em> phone for your friend — whichever you have.</p>
                     </div>
 
+                    <div class="form-group" id="referrerGroup">
+                        <p class="form-group-header">Your information (the referrer)</p>
+                        <p class="referrer-summary">Your $500 goes to <strong id="referrerSummaryName"></strong>. <button type="button" class="referrer-edit" id="referrerEdit">Not you?</button></p>
+                        <div class="form-row">
+                            <input type="text" id="referrerName" name="referrerName" placeholder="Your Name *" required autocomplete="name">
+                        </div>
+                        <div class="form-row">
+                            <input type="email" id="referrerEmail" name="referrerEmail" placeholder="Your Email" autocomplete="email">
+                        </div>
+                        <div class="form-row">
+                            <input type="tel" id="referrerPhone" name="referrerPhone" placeholder="Your Phone Number" autocomplete="tel">
+                        </div>
+                        <p class="form-note form-note-tight">Email <em>or</em> phone is required so we can send your $500.</p>
+                    </div>
+
                     <div class="form-group">
                         <div class="form-row">
                             <textarea id="referNote" name="note" placeholder="Anything we should know? (optional — e.g., 'they mentioned their windows are fogging up')" rows="3"></textarea>
@@ -111,9 +87,14 @@
                         <p class="form-note">By submitting, you confirm your friend is OK with us reaching out about new windows.</p>
                     </div>
 
+                    <div class="hp-field" aria-hidden="true">
+                        <input type="text" name="website" id="referWebsite" tabindex="-1" autocomplete="off">
+                    </div>
+
+                    <input type="hidden" id="referCode" name="referrerCode" value="">
+
                     <div id="referFormMessage" class="form-message" role="status"></div>
                 </form>
-
             </div>
         </section>
 
@@ -153,8 +134,19 @@
                       if (info.name)  document.getElementById('referrerName').value  = info.name;
                       if (info.email) document.getElementById('referrerEmail').value = info.email;
                       if (info.phone) document.getElementById('referrerPhone').value = info.phone;
+                      // We know who this is (email or phone on file), so collapse their
+                      // section to a one-line confirmation and lead with the friend fields.
+                      if (info.name && (info.email || info.phone)) {
+                          document.getElementById('referrerSummaryName').textContent = info.name;
+                          document.getElementById('referrerGroup').classList.add('is-collapsed');
+                      }
                   }).catch(function () { /* best-effort pre-fill */ });
             }
+
+            document.getElementById('referrerEdit').addEventListener('click', function () {
+                document.getElementById('referrerGroup').classList.remove('is-collapsed');
+                document.getElementById('referrerName').focus();
+            });
 
             var form = document.getElementById('referForm');
             var message = document.getElementById('referFormMessage');
@@ -175,7 +167,7 @@
                 var referrerCode  = document.getElementById('referCode').value;
 
                 if (!referrerName || !refereeName) {
-                    message.textContent = 'Please enter your name and your friend’s name.';
+                    message.textContent = 'Please enter your friend’s name and your name.';
                     return;
                 }
                 if (!referrerEmail && !referrerPhone) {
@@ -208,7 +200,8 @@
                     return r.json().catch(function () { return { success: r.ok }; });
                 }).then(function (j) {
                     if (j && j.success) {
-                        window.location.href = '/refer-thanks?n=' + encodeURIComponent(refereeName.split(' ')[0]);
+                        window.location.href = '/refer-thanks?n=' + encodeURIComponent(refereeName.split(' ')[0])
+                            + '&me=' + encodeURIComponent(referrerName.split(' ')[0]);
                     } else {
                         message.textContent = (j && j.message) || 'Submission failed. Please try again.';
                         form.querySelectorAll('input, button, textarea').forEach(function (el) { el.disabled = false; });

@@ -44,7 +44,7 @@
         <section class="form-section">
             <div class="thanks-card">
                 <div class="thanks-check">&#10003;</div>
-                <h2>Thanks <span id="referrerFirst"></span>!</h2>
+                <h2 id="thanksHeading">Thanks!</h2>
                 <p>Your referral for <strong id="refereeFirst">your friend</strong> is in. Here's what happens next:</p>
 
                 <ol class="thanks-steps">
@@ -86,6 +86,10 @@
             var refereeName = params.get('n');
             if (refereeName) {
                 document.getElementById('refereeFirst').textContent = refereeName;
+            }
+            var referrerName = params.get('me');
+            if (referrerName) {
+                document.getElementById('thanksHeading').textContent = 'Thanks, ' + referrerName + '!';
             }
         })();
     </script>
