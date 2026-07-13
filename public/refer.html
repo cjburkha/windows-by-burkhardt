@@ -146,6 +146,31 @@
             var form = document.getElementById('referForm');
             var message = document.getElementById('referFormMessage');
 
+            // ── Referral funnel events (GA4, mirrors consultation_funnel) ──
+            //   page_view /refer      → automatic (has ?r= in page_location)
+            //   refer_form_start      → first interaction with any form field
+            //   refer_validation_error→ submit blocked; fields param says where
+            //   refer_lead            → accepted submit (fires before redirect)
+            //   refer_call_click      → tapped the call/text number instead
+            // has_code distinguishes SMS-link visitors from organic ones.
+            function track(eventName, extra) {
+                if (typeof window.wbbTrack === 'function') {
+                    window.wbbTrack(eventName, Object.assign(
+                        { event_category: 'referral_funnel', has_code: !!code }, extra || {}));
+                }
+            }
+
+            var formStarted = false;
+            form.addEventListener('focusin', function () {
+                if (formStarted) return;
+                formStarted = true;
+                track('refer_form_start');
+            });
+
+            document.querySelectorAll('a[href^="tel:"]').forEach(function (a) {
+                a.addEventListener('click', function () { track('refer_call_click'); });
+            });
+
             // Live-format US phone numbers as (XXX) XXX-XXXX while typing
             function formatPhone(value) {
                 var d = value.replace(/\D/g, '');
@@ -176,6 +201,7 @@
             // animation) and bring the first one into view. If a flagged field
             // is inside the collapsed referrer section, expand it first.
             function flashFields(ids) {
+                track('refer_validation_error', { fields: ids.join(',') });
                 var first = null;
                 ids.forEach(function (id) {
                     var el = document.getElementById(id);
@@ -272,6 +298,8 @@
                     return r.json().catch(function () { return { success: r.ok }; });
                 }).then(function (j) {
                     if (j && j.success) {
+                        // beacon transport so the event survives the redirect
+                        track('refer_lead', { transport_type: 'beacon' });
                         window.location.href = '/refer-thanks?n=' + encodeURIComponent(refereeName.split(' ')[0])
                             + '&me=' + encodeURIComponent(referrerName.split(' ')[0]);
                     } else {
