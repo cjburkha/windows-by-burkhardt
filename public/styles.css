@@ -1369,11 +1369,40 @@ footer {
 
 .refer-form-card .form-group:first-of-type { margin-top: 0; }
 
+/* The optional note has no section header, so give it a stronger affordance:
+   a heavier, slightly brighter underline than the other fields and a tighter
+   default height. */
+.refer-form-card textarea {
+    border-bottom: 2px solid #454545;
+    min-height: 72px;
+}
+
+.refer-form-card textarea:focus {
+    border-bottom-color: var(--apex-green);
+}
+
+/* Missing-required feedback: flash the field's underline green 3x on submit */
+@keyframes field-flash {
+    0%, 100% { border-bottom-color: var(--apex-border); background: transparent; }
+    50% { border-bottom-color: var(--apex-green); background: rgba(118, 189, 29, 0.10); }
+}
+
+.refer-form-card .field-flash {
+    animation: field-flash 0.4s ease-in-out 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .refer-form-card .field-flash {
+        animation: none;
+        border-bottom-color: var(--apex-green);
+    }
+}
+
 @media (max-width: 900px) {
     .refer-hero {
         grid-template-columns: 1fr;
-        gap: 28px;
-        padding: 24px 24px 60px;
+        gap: 24px;
+        padding: 12px 24px 60px;
     }
 
     .refer-hero .page-hero {
@@ -1515,7 +1544,8 @@ footer {
     font-weight: 700;
 }
 
-.thanks-back {
+/* a.thanks-back so this outranks the `.thanks-card a` green link color */
+a.thanks-back {
     display: inline-block;
     margin-top: 16px;
     background: var(--apex-green);
@@ -1532,7 +1562,7 @@ footer {
     transition: background 0.25s, color 0.25s;
 }
 
-.thanks-back:hover {
+a.thanks-back:hover {
     background: transparent;
     color: var(--apex-green);
     text-decoration: none;

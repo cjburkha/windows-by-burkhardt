@@ -48,7 +48,7 @@
                 <form id="referForm" class="consultation-form" novalidate>
 
                     <div class="form-group">
-                        <p class="form-group-header">Your friend's information (the referral)</p>
+                        <p class="form-group-header">Who should we contact?</p>
                         <div class="form-row">
                             <input type="text" id="refereeName" name="refereeName" placeholder="Friend's Name *" required>
                         </div>
@@ -58,11 +58,13 @@
                         <div class="form-row">
                             <input type="tel" id="refereePhone" name="refereePhone" placeholder="Friend's Phone Number">
                         </div>
-                        <p class="form-note form-note-tight">Email <em>or</em> phone for your friend — whichever you have.</p>
+                        <div class="form-row">
+                            <textarea id="referNote" name="note" placeholder="Anything we should know about their windows? (optional)" rows="2"></textarea>
+                        </div>
                     </div>
 
                     <div class="form-group" id="referrerGroup">
-                        <p class="form-group-header">Your information (the referrer)</p>
+                        <p class="form-group-header">Where do we send your $500?</p>
                         <p class="referrer-summary">Your $500 goes to <strong id="referrerSummaryName"></strong>. <button type="button" class="referrer-edit" id="referrerEdit">Not you?</button></p>
                         <div class="form-row">
                             <input type="text" id="referrerName" name="referrerName" placeholder="Your Name *" required autocomplete="name">
@@ -72,13 +74,6 @@
                         </div>
                         <div class="form-row">
                             <input type="tel" id="referrerPhone" name="referrerPhone" placeholder="Your Phone Number" autocomplete="tel">
-                        </div>
-                        <p class="form-note form-note-tight">Email <em>or</em> phone is required so we can send your $500.</p>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="form-row">
-                            <textarea id="referNote" name="note" placeholder="Anything we should know? (optional — e.g., 'they mentioned their windows are fogging up')" rows="3"></textarea>
                         </div>
                     </div>
 
@@ -133,7 +128,7 @@
                       if (!info || !info.success) return;
                       if (info.name)  document.getElementById('referrerName').value  = info.name;
                       if (info.email) document.getElementById('referrerEmail').value = info.email;
-                      if (info.phone) document.getElementById('referrerPhone').value = info.phone;
+                      if (info.phone) document.getElementById('referrerPhone').value = formatPhone(info.phone);
                       // We know who this is (email or phone on file), so collapse their
                       // section to a one-line confirmation and lead with the friend fields.
                       if (info.name && (info.email || info.phone)) {
@@ -151,6 +146,55 @@
             var form = document.getElementById('referForm');
             var message = document.getElementById('referFormMessage');
 
+            // Live-format US phone numbers as (XXX) XXX-XXXX while typing
+            function formatPhone(value) {
+                var d = value.replace(/\D/g, '');
+                if (d.length > 10 && d.charAt(0) === '1') d = d.slice(1);
+                d = d.slice(0, 10);
+                if (d.length > 6) return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
+                if (d.length > 3) return '(' + d.slice(0, 3) + ') ' + d.slice(3);
+                return d;
+            }
+
+            // 10 digits (optional leading 1), area code can't start with 0/1
+            function validPhone(value) {
+                var d = value.replace(/\D/g, '');
+                if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
+                return d.length === 10 && /[2-9]/.test(d.charAt(0));
+            }
+
+            function validEmail(value) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
+            }
+
+            ['refereePhone', 'referrerPhone'].forEach(function (id) {
+                var el = document.getElementById(id);
+                el.addEventListener('input', function () { el.value = formatPhone(el.value); });
+            });
+
+            // Flash the underline of each invalid/missing field (3x, CSS
+            // animation) and bring the first one into view. If a flagged field
+            // is inside the collapsed referrer section, expand it first.
+            function flashFields(ids) {
+                var first = null;
+                ids.forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (!el) return;
+                    if (el.closest('#referrerGroup.is-collapsed')) {
+                        document.getElementById('referrerGroup').classList.remove('is-collapsed');
+                    }
+                    if (!first) first = el;
+                    el.classList.remove('field-flash');
+                    void el.offsetWidth; // restart the animation if mid-flight
+                    el.classList.add('field-flash');
+                    el.addEventListener('animationend', function handler() {
+                        el.classList.remove('field-flash');
+                        el.removeEventListener('animationend', handler);
+                    });
+                });
+                if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
                 message.textContent = '';
@@ -167,15 +211,43 @@
                 var referrerCode  = document.getElementById('referCode').value;
 
                 if (!referrerName || !refereeName) {
-                    message.textContent = 'Please enter your friend’s name and your name.';
-                    return;
-                }
-                if (!referrerEmail && !referrerPhone) {
-                    message.textContent = 'Please enter your email or phone so we can send your $500.';
+                    message.textContent = !refereeName
+                        ? 'Please enter your friend’s name.'
+                        : 'Please enter your name.';
+                    var nameIds = [];
+                    if (!refereeName) nameIds.push('refereeName');
+                    if (!referrerName) nameIds.push('referrerName');
+                    flashFields(nameIds);
                     return;
                 }
                 if (!refereeEmail && !refereePhone) {
                     message.textContent = 'Please enter your friend’s email or phone so we can reach out.';
+                    flashFields(['refereeEmail', 'refereePhone']);
+                    return;
+                }
+                if (refereeEmail && !validEmail(refereeEmail)) {
+                    message.textContent = 'Your friend’s email doesn’t look right — mind checking it?';
+                    flashFields(['refereeEmail']);
+                    return;
+                }
+                if (refereePhone && !validPhone(refereePhone)) {
+                    message.textContent = 'Your friend’s phone number should be 10 digits — mind checking it?';
+                    flashFields(['refereePhone']);
+                    return;
+                }
+                if (!referrerEmail && !referrerPhone) {
+                    message.textContent = 'Please enter your email or phone so we can send your $500.';
+                    flashFields(['referrerEmail', 'referrerPhone']);
+                    return;
+                }
+                if (referrerEmail && !validEmail(referrerEmail)) {
+                    message.textContent = 'Your email doesn’t look right — mind checking it?';
+                    flashFields(['referrerEmail']);
+                    return;
+                }
+                if (referrerPhone && !validPhone(referrerPhone)) {
+                    message.textContent = 'Your phone number should be 10 digits — mind checking it?';
+                    flashFields(['referrerPhone']);
                     return;
                 }
 
