@@ -161,10 +161,29 @@
             }
 
             var formStarted = false;
-            form.addEventListener('focusin', function () {
+            var submitted = false;
+            var lastField = '';
+            form.addEventListener('focusin', function (e) {
+                var t = e.target;
+                if (t && t.id && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) lastField = t.id;
                 if (formStarted) return;
                 formStarted = true;
                 track('refer_form_start');
+            });
+
+            // Abandon = started the form, left the page without an accepted
+            // submit. pagehide + beacon is the most reliable unload signal,
+            // incl. mobile Safari. last_field says where they stalled.
+            window.addEventListener('pagehide', function () {
+                if (!formStarted || submitted) return;
+                var filled = ['refereeName', 'refereeEmail', 'refereePhone',
+                              'referrerName', 'referrerEmail', 'referrerPhone', 'referNote']
+                    .filter(function (id) { return document.getElementById(id).value.trim(); }).length;
+                track('refer_form_abandon', {
+                    last_field: lastField,
+                    fields_filled: filled,
+                    transport_type: 'beacon'
+                });
             });
 
             document.querySelectorAll('a[href^="tel:"]').forEach(function (a) {
@@ -298,6 +317,7 @@
                     return r.json().catch(function () { return { success: r.ok }; });
                 }).then(function (j) {
                     if (j && j.success) {
+                        submitted = true; // suppress the pagehide abandon event
                         // beacon transport so the event survives the redirect
                         track('refer_lead', { transport_type: 'beacon' });
                         window.location.href = '/refer-thanks?n=' + encodeURIComponent(refereeName.split(' ')[0])
