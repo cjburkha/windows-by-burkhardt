@@ -66,6 +66,36 @@ async function saveSubmission(data) {
 }
 
 /**
+ * Save a $500 referral-program submission (/api/refer) to the database.
+ * Same contract as saveSubmission: the tenant inbox email is the critical
+ * path; the caller catches errors so a DB failure never fails the response.
+ */
+async function saveReferral(data) {
+  if (!process.env.DATABASE_URL) {
+    console.warn('DATABASE_URL not set — skipping referral DB save.');
+    return null;
+  }
+
+  const client = getClient();
+  return client.referral.create({
+    data: {
+      referrerName:   data.referrerName,
+      referrerEmail:  data.referrerEmail  || null,
+      referrerPhone:  data.referrerPhone  || null,
+      refereeName:    data.refereeName,
+      refereeEmail:   data.refereeEmail   || null,
+      refereePhone:   data.refereePhone   || null,
+      note:           data.note           || null,
+      referrerCode:   data.referrerCode   || null,
+      referrerLeadId: data.referrerLeadId ?? null,
+      pageUrl:        data.pageUrl        || null,
+      ip:             data.ip             || null,
+      tenantId:       data.tenantId       || 'burkhardt',
+    },
+  });
+}
+
+/**
  * Return all active tenants. Used by server.js to build the in-memory
  * hostname → tenant map at startup.
  */
@@ -75,4 +105,4 @@ async function getActiveTenants() {
   return client.tenant.findMany({ where: { active: true } });
 }
 
-module.exports = { saveSubmission, getActiveTenants };
+module.exports = { saveSubmission, saveReferral, getActiveTenants };

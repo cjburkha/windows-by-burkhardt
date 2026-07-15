@@ -697,6 +697,17 @@ app.post('/api/refer', contactLimiter, async (req, res) => {
     const forwarded = req.headers['x-forwarded-for'];
     const ip = forwarded ? forwarded.split(',')[0].trim() : req.ip;
 
+    // Durable ledger for $500 payouts — non-blocking, same contract as the
+    // consultation form: a DB failure logs but never fails the response.
+    dbService.saveReferral({
+      referrerName, referrerEmail, referrerPhone,
+      refereeName,  refereeEmail,  refereePhone,
+      note, referrerCode,
+      referrerLeadId: knownReferrerLeadId,
+      pageUrl, ip,
+      tenantId: tenant.id,
+    }).catch(err => console.error('Referral DB save failed:', err.message));
+
     const result = await emailService.sendReferralRecord({
       referrerName, referrerEmail, referrerPhone,
       refereeName,  refereeEmail,  refereePhone,

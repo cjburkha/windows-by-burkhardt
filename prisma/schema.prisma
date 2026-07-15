@@ -25,6 +25,7 @@ model Tenant {
   pixelId        String?
   active         Boolean      @default(true)
   submissions    Submission[]
+  referrals      Referral[]
 }
 
 model Submission {
@@ -73,4 +74,31 @@ model Submission {
   utmTerm      String?   // utm_term=replacement+windows (paid search keyword)
   fbclid       String?   // Facebook click ID — auto-appended by FB Ads; improves CAPI match rate
   gclid        String?   // Google click ID — auto-appended by Google Ads
+}
+
+// $500 referral program submissions (/api/refer). The tenant inbox email
+// remains the notification; this table is the durable ledger so payouts and
+// per-campaign reporting don't depend on searching a mailbox.
+model Referral {
+  id             Int      @id @default(autoincrement())
+  submittedAt    DateTime @default(now())
+
+  tenantId       String   @default("burkhardt")
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+
+  // The person who gets the $500
+  referrerName   String
+  referrerEmail  String?
+  referrerPhone  String?
+
+  // The friend we reach out to
+  refereeName    String
+  refereeEmail   String?
+  refereePhone   String?
+
+  note           String?
+  referrerCode   String?  // /r/<code> the visitor arrived with, if any
+  referrerLeadId Int?     // decoded apex leads.id — verified payout target
+  pageUrl        String?
+  ip             String?
 }
