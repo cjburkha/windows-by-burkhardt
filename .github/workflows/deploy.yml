@@ -61,6 +61,8 @@ jobs:
       run: |
         aws s3 sync public/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
           --exclude "*.html" \
+          --exclude "groundworks/*" \
+          --exclude "cfi101/*" \
           --cache-control "public,max-age=86400" \
           --delete
         echo "Static assets synced to s3://${{ secrets.S3_BUCKET_NAME }}"
