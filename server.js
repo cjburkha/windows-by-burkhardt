@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const geoip  = require('geoip-lite');
 const cors = require('cors');
 const path = require('path');
+const { Readable } = require('stream');
 const rateLimit = require('express-rate-limit');
 const validator = require('validator');
 const xss = require('xss');
@@ -400,6 +401,33 @@ app.post('/webhooks/mandrill-sms', mandrillUrlencoded, async (req, res) => {
     } catch (err) {
       console.error('mandrill inbound write failed:', err.message);
     }
+  }
+});
+
+// CFI 101 study guide. Files live in the public static bucket. This route keeps
+// the browser on www.windowsbyburkhardt.com/groundworks while the site itself
+// is served by App Runner.
+const GROUNDWORKS_ORIGIN = 'https://wbb-static-prod.s3.us-east-1.amazonaws.com/groundworks';
+app.use('/groundworks', async (req, res) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return res.sendStatus(405);
+  if (req.path.includes('..')) return res.sendStatus(400);
+  const bare = req.originalUrl.split('?')[0];
+  if (bare === '/groundworks') return res.redirect(302, '/groundworks/');
+  const rel = req.path === '/' || req.path === '' ? '/index.html' : req.path;
+  const headers = {};
+  if (req.headers.range) headers.Range = req.headers.range;
+  try {
+    const upstream = await fetch(GROUNDWORKS_ORIGIN + rel, { headers });
+    res.status(upstream.status);
+    for (const name of ['content-type', 'content-length', 'content-range', 'accept-ranges', 'cache-control', 'etag']) {
+      const value = upstream.headers.get(name);
+      if (value) res.setHeader(name, value);
+    }
+    if (req.method === 'HEAD' || !upstream.body) return res.end();
+    Readable.fromWeb(upstream.body).pipe(res);
+  } catch (err) {
+    console.error('groundworks proxy failed:', err.message);
+    if (!res.headersSent) res.status(502).send('Study guide is unavailable');
   }
 });
 
